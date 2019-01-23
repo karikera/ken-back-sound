@@ -1,5 +1,6 @@
 #define __IS_KEN_BACKEND_SOUND_DLL
 #include "sound.h"
+#include <limits.h>
 
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
@@ -10,23 +11,253 @@
 #include <math.h>
 #include <assert.h>
 
+#ifdef _DEBUG
+#pragma comment(lib, "libvorbisd.lib")
+#pragma comment(lib, "libvorbisfiled.lib")
+#else
+#pragma comment(lib, "libvorbis.lib")
+#pragma comment(lib, "libvorbisfile.lib")
+#endif
+
+#ifdef __EMSCRIPTEN__
+#define _TF(x) x
+#define fstrcmp(a,b) strcmp(a,b)
+#else
+#include <wchar.h>
+#define _TF(x) L##x
+#define fstrcmp(a,b) wcscmp(a,L##b)
+#endif
+
+constexpr uint16_t WAVE_FORMAT_TAG = 1;
+
+namespace
+{
+	typedef struct _kr_backend_wave_format_base {
+		uint16_t formatTag;
+		uint16_t channels;
+		uint32_t samplesPerSec;
+		uint32_t avgBytesPerSec;
+		uint16_t blockAlign;
+	} kr_backend_wave_format_base;
+
+	bool loadFromOgg(kr_backend_sound_callback * callback, OggVorbis_File* vf) noexcept
+	{
+		vorbis_info *  vi;
+		vi = ov_info(vf, -1);
+		if (vi == nullptr) return false;
+
+		
+		_kr_backend_sound_info info;
+		info.format.formatTag = WAVE_FORMAT_TAG;
+		info.format.channels = vi->channels;
+		info.format.bitsPerSample = 16;
+		info.format.blockAlign = info.format.channels * info.format.bitsPerSample / 8;
+		info.format.samplesPerSec = vi->rate;
+		info.format.bytesPerSec = info.format.samplesPerSec * info.format.blockAlign;
+		info.format.size = sizeof(info.format);
+		info.duration = ov_time_total(vf, -1);
+		info.totalBytes = (uint32_t)(info.format.samplesPerSec * info.duration);
+		char * dest = (char*)callback->start(callback, &info);
+		if (dest == nullptr) return false;
+		uint32_t left = info.totalBytes;
+
+		while (left)
+		{
+			int nBitStream;
+			int readed = ov_read(vf, dest, left, 0, 2, 1, &nBitStream);
+			if (readed < 0)
+			{
+				memset(dest, 0, left);
+				break;
+			}
+			dest += readed;
+			left -= readed;
+		}
+		return true;
+	}
+
+	constexpr uint32_t makeSignature(const char * str, size_t size)
+	{
+		return size == 0 ? 0 : ((makeSignature(str + 1, size - 1) << 8) | *str);
+	}
+	constexpr uint32_t operator ""_sig(const char * str, size_t size)
+	{
+		return makeSignature(str, size);
+	}
+
+	class TempBuffer
+	{
+	private:
+		void * m_buffer;
+		size_t m_size;
+
+	public:
+		TempBuffer(size_t reserve) noexcept
+			:m_size(reserve), m_buffer(nullptr)
+		{
+		}
+		~TempBuffer() noexcept
+		{
+			if (m_buffer) free(m_buffer);
+		}
+
+		void * operator()(size_t size) noexcept
+		{
+			if (m_buffer != nullptr)
+			{
+				if (m_size >= size) return m_buffer;
+				free(m_buffer);
+				m_buffer = malloc(m_size = size);
+				return m_buffer;
+			}
+			else
+			{
+				m_buffer = malloc(size);
+				return m_buffer;
+			}
+		}
+
+	};
+}
+
 extern "C" bool KEN_EXTERNAL kr_backend_sound_load_from_stream(kr_backend_sound_callback * callback, void * param, void(*readStream)(void * param, void * dest, size_t destSize))
 {
-	if (fstrcmp(callback->extension, L"mp3") == 0)
+	if (fstrcmp(callback->extension, "wav") == 0)
+	{
+		TempBuffer temp(4096);
+
+		auto read32 = [&] {
+			uint32_t sig;
+			readStream(param, &sig, 4);
+			return sig;
+		};
+		auto testSignature = [&](uint32_t signature){
+			return read32() == signature;
+		};
+		auto findChunk = [&](uint32_t signature){
+			while (!testSignature(signature))
+			{
+				uint32_t size = read32();
+				readStream(param, temp(size), size);
+			}
+			return read32();
+		};
+
+		auto readStructure = [&](void* value, uintptr_t size, uintptr_t srcsize) {
+			char* pRead = (char*)value;
+			if (srcsize < size)
+			{
+				readStream(param, pRead, srcsize);
+			}
+			else
+			{
+				readStream(param, pRead, size);
+			}
+		};
+
+		if (!testSignature("RIFF"_sig)) return false;
+		uint32_t fullSize = read32();
+		if (!testSignature("WAVE"_sig)) return false;
+
+		uint32_t formatSize = findChunk("fmt "_sig);
+		if (formatSize == -1) return false;
+		if (formatSize < sizeof(kr_backend_wave_format)) return false;
+
+		kr_backend_sound_info info;
+		readStructure(&info.format, sizeof(info.format), formatSize);
+		if (info.format.formatTag != WAVE_FORMAT_TAG) return false;
+
+		uint32_t dataSize = findChunk("data"_sig);
+		if (dataSize == -1) return false;
+
+		info.totalBytes = dataSize;
+		info.duration = (double)dataSize / info.format.bytesPerSec;
+		short * buffer = callback->start(callback, &info);
+		if (buffer != nullptr)
+		{
+			readStream(param, buffer, dataSize);
+		}
+		return true;
+	}
+	if (fstrcmp(callback->extension, "mp3") == 0)
 	{
 		assert(!"Not supported yet");
 		return false;
 	}
+	if (fstrcmp(callback->extension, "ogg") == 0)
+	{
+		struct pack_t
+		{
+			void * param;
+			void(*readStream)(void * param, void * dest, size_t destSize);
+		} pack = {param, readStream};
+
+		ov_callbacks callbacks = {
+			[](void * buffer, size_t elementSize, size_t elementCount, void * fp)->size_t {
+			pack_t * pack = (pack_t*)fp;
+			size_t readed = elementSize * elementCount;
+			pack->readStream(pack->param, buffer, readed);
+			return readed;
+		},
+			nullptr,
+			[](void * fp)->int {
+			return 0;
+		},
+			nullptr
+		};
+		OggVorbis_File vf;
+		int res = ov_open_callbacks((void *)&pack, &vf, nullptr, 0, callbacks);
+		if (res < 0)
+		{
+			switch (res) ////에러처리
+			{
+			case OV_EREAD: break;
+			case OV_ENOTVORBIS: break;
+			case OV_EVERSION: break;
+			case OV_EBADHEADER: break;
+			case OV_EFAULT: break;
+			}
+			return false;
+		}
+		bool ret = loadFromOgg(callback, &vf);
+		ov_clear(&vf);
+		return ret;
+	}
+	if (fstrcmp(callback->extension, "opus") == 0)
+	{
+		assert(!"Not supported yet");
+		return false;
+	}
+	assert(!"Not supported yet");
+	return false;
 }
 extern "C" bool KEN_EXTERNAL kr_backend_sound_load_from_file(kr_backend_sound_callback * callback, FILE * file)
 {
-	if (fstrcmp(callback->extension, L"ogg") == 0)
+	if (fstrcmp(callback->extension, "ogg") == 0)
 	{
-		// ogg
+		OggVorbis_File vf;
+		int res = ov_open(file, &vf, nullptr, 0);
+		if (res < 0)
+		{
+			switch (res)
+			{
+			case OV_EREAD: break;
+			case OV_ENOTVORBIS: break;
+			case OV_EVERSION: break;
+			case OV_EBADHEADER: break;
+			case OV_EFAULT: break;
+			}
+			fclose(file);
+			return false;
+		}
+		if (loadFromOgg(callback, &vf)) return true;
+		fclose(file);
+		return false;
 	}
-	else if (fstrcmp(callback->extension, L"opus") == 0)
+	if (fstrcmp(callback->extension, "opus") == 0)
 	{
-		// opus
+		assert(!"Not supported yet");
+		return false;
 	}
 
 	// read as memory
@@ -42,7 +273,7 @@ extern "C" bool KEN_EXTERNAL kr_backend_sound_load_from_file(kr_backend_sound_ca
 }
 extern "C" bool KEN_EXTERNAL kr_backend_sound_load_from_memory(kr_backend_sound_callback * callback, const void * memory, size_t size)
 {
-	if (fstrcmp(callback->extension, L"mp3") == 0)
+	if (fstrcmp(callback->extension, "mp3") == 0)
 	{
 		try
 		{
@@ -71,7 +302,14 @@ extern "C" bool KEN_EXTERNAL kr_backend_sound_load_from_memory(kr_backend_sound_
 				totalSampleCount *= SAMPLE_PER_FRAME;
 			}
 
-			short * dest = callback->start(callback, mono ? 1 : 2, 16, totalSampleCount);
+			kr_backend_sound_info info;
+			info.format.bitsPerSample = 16;
+			info.format.channels = mono ? 1 : 2;
+			info.format.samplesPerSec = maxSampleRate;
+			info.format.blockAlign = info.format.channels * info.format.bitsPerSample / 8;
+			info.duration = (double)totalSampleCount / maxSampleRate;
+			info.totalBytes = totalSampleCount * info.format.blockAlign;
+			short * dest = callback->start(callback, &info);
 
 			float readed[2][SAMPLE_PER_FRAME];
 			OpenMP3::Decoder decoder(openmp3);
@@ -113,7 +351,7 @@ extern "C" bool KEN_EXTERNAL kr_backend_sound_load_from_memory(kr_backend_sound_
 						float * src_end = readed[0] + nsamples;
 						while (src != src_end)
 						{
-							*dest++ = lroundf((*src++) * SHRT_MAX);
+							*dest++ = (short)lroundf((*src++) * SHRT_MAX);
 						}
 					}
 				}
@@ -153,6 +391,11 @@ extern "C" bool KEN_EXTERNAL kr_backend_sound_load_from_memory(kr_backend_sound_
 		{
 			return false;
 		}
+	}
+	if (fstrcmp(callback->extension, "opus") == 0)
+	{
+		assert(!"Not supported yet");
+		return false;
 	}
 
 	// read as stream

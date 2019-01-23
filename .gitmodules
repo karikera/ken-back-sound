@@ -1,0 +1,6 @@
+[submodule "ken-back-sound/libvorbis"]
+	path = ken-back-sound/libvorbis
+	url = https://github.com/karikera/libvorbis-bin
+[submodule "ken-back-sound/libogg"]
+	path = ken-back-sound/libogg
+	url = https://github.com/karikera/libogg-bin

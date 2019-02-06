@@ -125,10 +125,11 @@ bool kr::backend::Png::load(krb_image_callback_t* callback, krb_file_t * file) n
 		uint32_t H = imginfo.height;
 		png_bytep* row_pointers = new png_bytep[H];
 		png_bytep *p = row_pointers;
-		while (H--)
+		png_bytep* p_end = p + H;
+		while (p != p_end)
 		{
 			*p++ = surf;
-			surf += imginfo.width;
+			surf += imginfo.pitchBytes;
 		}
 		png_read_image(png_ptr, row_pointers);
 		delete [] row_pointers;
@@ -138,7 +139,7 @@ bool kr::backend::Png::load(krb_image_callback_t* callback, krb_file_t * file) n
 	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)nullptr);
 	return true;
 }
-bool kr::backend::Png::save(const krb_image_info_t* info, const void* pixelData, krb_file_t* file) noexcept
+bool kr::backend::Png::save(const krb_image_save_info_t* info, krb_file_t* file) noexcept
 {
 	assert(!"Not Implemented Yet");
 	return false;

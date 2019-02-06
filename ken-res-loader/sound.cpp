@@ -32,14 +32,14 @@ namespace
 		uint16_t blockAlign;
 	} kr_backend_wave_format_base;
 
-	bool loadFromOgg(kr_backend_sound_callback_t * callback, OggVorbis_File* vf) noexcept
+	bool loadFromOgg(krb_sound_callback_t * callback, OggVorbis_File* vf) noexcept
 	{
 		vorbis_info *  vi;
 		vi = ov_info(vf, -1);
 		if (vi == nullptr) return false;
 
 		
-		kr_backend_sound_info_t info;
+		krb_sound_info_t info;
 		info.format.formatTag = WAVE_FORMAT_TAG;
 		info.format.channels = vi->channels;
 		info.format.bitsPerSample = 16;
@@ -69,38 +69,52 @@ namespace
 	}
 }
 
-extern "C" bool KEN_EXTERNAL krb_sound_load(kr_backend_sound_callback_t * callback, krb_file_t* file)
+extern "C" bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound_callback_t * callback, krb_file_t* file)
 {
 	kr::backend::ReadStream is(file);
 
-	if (fstrcmp(callback->extension, "wav") == 0)
+	switch (extension)
 	{
-		if (!is.testSignature("RIFF"_sig)) return false;
-		uint32_t fullSize = is.read32();
-		if (!is.testSignature("WAVE"_sig)) return false;
+	case ExtensionSoundOpus:
+		break;
+	case ExtensionSoundOgg:
+	{
 
-		uint32_t formatSize = is.findChunk("fmt "_sig);
-		if (formatSize == -1) return false;
-		if (formatSize < sizeof(kr_backend_wave_format_t)) return false;
-
-		kr_backend_sound_info_t info;
-		is.readStructure(&info.format, sizeof(info.format), formatSize);
-		if (info.format.formatTag != WAVE_FORMAT_TAG) return false;
-
-		uint32_t dataSize = is.findChunk("data"_sig);
-		if (dataSize == -1) return false;
-
-		info.totalBytes = dataSize;
-		info.duration = (double)dataSize / info.format.bytesPerSec;
-		short * buffer = callback->start(callback, &info);
-		if (buffer != nullptr)
+		ov_callbacks callbacks = {
+			[](void* buffer, size_t elementSize, size_t elementCount, void* fp)->size_t {
+			return krb_fread((krb_file_t*)fp, buffer, elementSize * elementCount);
+		},
+			[](void* fp, ogg_int64_t offset, int whence)->int {
+				switch (whence)
+				{
+				case SEEK_SET: krb_fseek_set((krb_file_t*)fp, offset); break;
+				case SEEK_CUR: krb_fseek_cur((krb_file_t*)fp, offset); break;
+				case SEEK_END: krb_fseek_end((krb_file_t*)fp, offset); break;
+				}
+				return 0;
+			},
+			[](void* fp)->int { return 0; },
+			[](void* fp)->long { return (long)krb_ftell((krb_file_t*)fp); }
+		};
+		OggVorbis_File vf;
+		int res = ov_open_callbacks((void*)file, &vf, nullptr, 0, callbacks);
+		if (res < 0)
 		{
-			krb_fread(file, buffer, dataSize);
+			switch (res) ////俊矾贸府
+			{
+			case OV_EREAD: break;
+			case OV_ENOTVORBIS: break;
+			case OV_EVERSION: break;
+			case OV_EBADHEADER: break;
+			case OV_EFAULT: break;
+			}
+			return false;
 		}
-		return true;
+		bool ret = loadFromOgg(callback, &vf);
+		ov_clear(&vf);
+		return ret;
 	}
-	if (fstrcmp(callback->extension, "mp3") == 0)
-	{
+	case ExtensionSoundMp3:
 		try
 		{
 			uint64_t file_start_pos = krb_ftell(file);
@@ -139,7 +153,7 @@ extern "C" bool KEN_EXTERNAL krb_sound_load(kr_backend_sound_callback_t * callba
 			krb_fseek_set(file, file_start_pos);
 
 
-			kr_backend_sound_info_t info;
+			krb_sound_info_t info;
 			info.format.bitsPerSample = 16;
 			info.format.channels = mono ? 1 : 2;
 			info.format.samplesPerSec = maxSampleRate;
@@ -242,46 +256,33 @@ extern "C" bool KEN_EXTERNAL krb_sound_load(kr_backend_sound_callback_t * callba
 		{
 			return false;
 		}
-	}
-	if (fstrcmp(callback->extension, "ogg") == 0)
+	case ExtensionSoundWav:
 	{
-		ov_callbacks callbacks = {
-			[](void * buffer, size_t elementSize, size_t elementCount, void * fp)->size_t {
-			return krb_fread((krb_file_t*)fp, buffer, elementSize * elementCount);
-		},
-			[](void* fp, ogg_int64_t offset, int whence)->int {
-				switch (whence)
-				{
-				case SEEK_SET: krb_fseek_set((krb_file_t*)fp, offset); break;
-				case SEEK_CUR: krb_fseek_cur((krb_file_t*)fp, offset); break;
-				case SEEK_END: krb_fseek_end((krb_file_t*)fp, offset); break;
-				}
-				return 0;
-			},
-			[](void * fp)->int { return 0; },
-			[](void * fp)->long { return (long)krb_ftell((krb_file_t*)fp); }
-		};
-		OggVorbis_File vf;
-		int res = ov_open_callbacks((void *)file, &vf, nullptr, 0, callbacks);
-		if (res < 0)
+		if (!is.testSignature("RIFF"_sig)) return false;
+		uint32_t fullSize = is.read32();
+		if (!is.testSignature("WAVE"_sig)) return false;
+
+		uint32_t formatSize = is.findChunk("fmt "_sig);
+		if (formatSize == -1) return false;
+		if (formatSize < sizeof(krb_wave_format_t)) return false;
+
+		krb_sound_info_t info;
+		is.readStructure(&info.format, sizeof(info.format), formatSize);
+		if (info.format.formatTag != WAVE_FORMAT_TAG) return false;
+
+		uint32_t dataSize = is.findChunk("data"_sig);
+		if (dataSize == -1) return false;
+
+		info.totalBytes = dataSize;
+		info.duration = (double)dataSize / info.format.bytesPerSec;
+		short* buffer = callback->start(callback, &info);
+		if (buffer != nullptr)
 		{
-			switch (res) ////俊矾贸府
-			{
-			case OV_EREAD: break;
-			case OV_ENOTVORBIS: break;
-			case OV_EVERSION: break;
-			case OV_EBADHEADER: break;
-			case OV_EFAULT: break;
-			}
-			return false;
+			krb_fread(file, buffer, dataSize);
 		}
-		bool ret = loadFromOgg(callback, &vf);
-		ov_clear(&vf);
-		return ret;
+		return true;
 	}
-	if (fstrcmp(callback->extension, "opus") == 0)
-	{
-		assert(!"Not supported yet");
+	default:
 		return false;
 	}
 	assert(!"Not supported yet");

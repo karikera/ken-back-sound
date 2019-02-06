@@ -5,6 +5,7 @@
 _KR_C_MODE_BEGIN
 
 typedef struct _krb_image_info_t krb_image_info_t;
+typedef struct _krb_image_save_info_t krb_image_save_info_t;
 typedef struct _krb_image_palette_t krb_image_palette_t;
 typedef struct _krb_image_callback_t krb_image_callback_t;
 
@@ -32,6 +33,22 @@ struct _krb_image_info_t
 	kr_pixelformat_t pixelformat;
 	uint32_t width;
 	uint32_t height;
+
+	uint32_t pitchBytes; // in-out(default: recommended pitch)
+	void* data; // out
+};
+
+struct _krb_image_save_info_t
+{
+	kr_pixelformat_t pixelformat;
+	uint32_t width;
+	uint32_t height;
+	uint32_t pitchBytes;
+	void* data;
+
+	int jpegQuality; // max is 100
+	bool tgaCompress;
+	krb_image_palette_t* palette;
 };
 
 struct _krb_image_palette_t
@@ -41,12 +58,12 @@ struct _krb_image_palette_t
 
 struct _krb_image_callback_t
 {
-	const fchar_t* extension;
-	void* (*start)(_krb_image_callback_t* _this, krb_image_info_t* _info);
+	bool (*start)(_krb_image_callback_t* _this, krb_image_info_t* _info);
 
 	krb_image_palette_t* palette;
 };
 
-bool KEN_EXTERNAL krb_load_image(krb_image_callback_t* callback, krb_file_t* file);
+bool KEN_EXTERNAL krb_load_image(krb_extension_t extension, krb_image_callback_t* callback, krb_file_t* file);
+bool KEN_EXTERNAL krb_save_image(krb_extension_t extension, const krb_image_save_info_t* info, krb_file_t* file);
 
 _KR_C_MODE_END

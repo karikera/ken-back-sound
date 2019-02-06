@@ -120,7 +120,7 @@ namespace
 	};
 }
 
-bool kr::backend::Jpeg::save(const krb_image_info_t* info, const void* pixelData, int quality, krb_file_t* file) noexcept
+bool kr::backend::Jpeg::save(const krb_image_save_info_t* info, krb_file_t* file) noexcept
 {
 	assert(info->pixelformat == PixelFormatBGR8);
 
@@ -181,7 +181,7 @@ bool kr::backend::Jpeg::save(const krb_image_info_t* info, const void* pixelData
 	/* Now you can set any non-default parameters you wish to.
 	* Here we just illustrate the use of quality (quantization table) scaling:
 	*/
-	jpeg_set_quality(&cinfo, quality, TRUE /* limit to baseline-JPEG values */);
+	jpeg_set_quality(&cinfo, info->jpegQuality, TRUE /* limit to baseline-JPEG values */);
 
 	/* Step 4: Start compressor */
 
@@ -198,9 +198,9 @@ bool kr::backend::Jpeg::save(const krb_image_info_t* info, const void* pixelData
 	* To keep things simple, we pass one scanline per call; you can pass
 	* more if you wish, though.
 	*/
-	int row_stride = info->width * 3; /* JSAMPLEs per row in image_buffer */
+	int row_stride = info->pitchBytes; /* JSAMPLEs per row in image_buffer */
 
-	JSAMPLE* src = (JSAMPLE*)pixelData;
+	JSAMPLE* src = (JSAMPLE*)info->data;
 
 	while (cinfo.next_scanline < cinfo.image_height) {
 		/* jpeg_write_scanlines expects an array of pointers to scanlines.
@@ -297,9 +297,16 @@ bool kr::backend::Jpeg::load(krb_image_callback_t* callback, krb_file_t* file) n
 
 	krb_image_info_t imginfo;
 	imginfo.width = cinfo.output_width;
+	imginfo.pitchBytes = row_stride;
 	imginfo.height = cinfo.output_height;
 	imginfo.pixelformat = PixelFormatBGR8;
-	char * dest = (char*)callback->start(callback, &imginfo);
+	if (!callback->start(callback, &imginfo))
+	{
+		jpeg_finish_decompress(&cinfo);
+		jpeg_destroy_decompress(&cinfo);
+		return false;
+	}
+	char * dest = (char*)imginfo.data;
 
 	/* Make a one-row-high sample array that will go away when done with image */
 	buffer = (*cinfo.mem->alloc_sarray)
@@ -319,12 +326,12 @@ bool kr::backend::Jpeg::load(krb_image_callback_t* callback, krb_file_t* file) n
 		(void)jpeg_read_scanlines(&cinfo, buffer, 1);
 		/* Assume put_scanline_someplace wants a pointer and sample count. */
 		memcpy(dest, buffer[0], row_stride);
-		dest += row_stride;
+		dest += imginfo.pitchBytes;
 	}
 
 	/* Step 7: Finish decompression */
 
-	(void)jpeg_finish_decompress(&cinfo);
+	jpeg_finish_decompress(&cinfo);
 	/* We can ignore the return value since suspension is not possible
 	* with the stdio data source.
 	*/

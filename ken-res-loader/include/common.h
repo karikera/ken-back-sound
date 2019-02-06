@@ -82,4 +82,83 @@ inline void krb_fclose(krb_file_t* file) {
 	return file->vtable->close(file);
 }
 
+
+#define KRB_EXTENSION(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
+enum krb_extension_t
+{
+	ExtensionImageInvalid = 0,
+	ExtensionImageBmp = KRB_EXTENSION('B', 'M', 'P', '\0'),
+	ExtensionImageJpg = KRB_EXTENSION('J', 'P', 'G', '\0'),
+	ExtensionImageJpeg = KRB_EXTENSION('J', 'P', 'E', 'G'),
+	ExtensionImagePng = KRB_EXTENSION('P', 'N', 'G', '\0'),
+	ExtensionImageTga = KRB_EXTENSION('T', 'G', 'A', '\0'),
+
+	ExtensionSoundWav = KRB_EXTENSION('W', 'A', 'V', '\0'),
+	ExtensionSoundOgg = KRB_EXTENSION('O', 'G', 'G', '\0'),
+	ExtensionSoundOpus = KRB_EXTENSION('O', 'P', 'U', 'S'),
+	ExtensionSoundMp3 = KRB_EXTENSION('M', 'P', '3', '\0'),
+
+	ExtensionCompressZip = KRB_EXTENSION('Z', 'I', 'P', '\0'),
+	ExtensionCompress7z = KRB_EXTENSION('7', 'Z', '\0', '\0'),
+	ExtensionCompressLzma = KRB_EXTENSION('L', 'Z', 'M', 'A'),
+};
+
+inline krb_extension_t krb_make_extension(const char* extension)
+{
+	uint32_t v = 0;
+	uint32_t offset = 0;
+	for (;;)
+	{
+		char chr = *extension++;
+		if (chr == '\0') break;
+		if ('a' <= chr && chr <= 'z')
+		{
+			chr += 'A' - 'a';
+		}
+		else if ('A' <= chr && chr <= 'Z')
+		{
+		}
+		else if ('0' <= chr && chr <= '9')
+		{
+		}
+		else
+		{
+			return ExtensionImageInvalid;
+		}
+		v |= (uint32_t)chr << offset;
+		offset += 8;
+		if (offset >= 32) return ExtensionImageInvalid;
+	}
+	return (krb_extension_t)v;
+}
+
+inline krb_extension_t krb_make_extension_16(const char16_t* extension)
+{
+	uint32_t v = 0;
+	uint32_t offset = 0;
+	for (;;)
+	{
+		char16_t chr = *extension++;
+		if (chr == u'\0') break;
+		if (u'a' <= chr && chr <= u'z')
+		{
+			chr += u'A' - u'a';
+		}
+		else if (u'A' <= chr && chr <= u'Z')
+		{
+		}
+		else if (u'0' <= chr && chr <= u'9')
+		{
+		}
+		else
+		{
+			return ExtensionImageInvalid;
+		}
+		v |= (uint32_t)chr << offset;
+		offset += 8;
+		if (offset >= 32) return ExtensionImageInvalid;
+	}
+	return (krb_extension_t)v;
+}
+
 _KR_C_MODE_END

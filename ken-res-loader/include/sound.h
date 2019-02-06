@@ -8,11 +8,12 @@
 
 _KR_C_MODE_BEGIN
 
-typedef struct _kr_backend_wave_format_t kr_backend_wave_format_t;
-typedef struct _kr_backend_sound_info_t kr_backend_sound_info_t;
-typedef struct _kr_backend_sound_callback_t kr_backend_sound_callback_t;
+typedef struct _krb_wave_format_t krb_wave_format_t;
+typedef struct _krb_sound_info_t krb_sound_info_t;
+typedef struct _krb_sound_callback_t krb_sound_callback_t;
 
-struct _kr_backend_wave_format_t
+#pragma pack(push, 1)
+struct _krb_wave_format_t
 {
 	uint16_t formatTag;
 	uint16_t channels;
@@ -22,20 +23,21 @@ struct _kr_backend_wave_format_t
 	uint16_t bitsPerSample;
 	uint16_t size;
 };
+#pragma pack(pop)
 
-struct _kr_backend_sound_info_t
+struct _krb_sound_info_t
 {
-	kr_backend_wave_format_t format;
+	krb_wave_format_t format;
 	double duration;
 	uint32_t totalBytes;
 };
 
-struct _kr_backend_sound_callback_t
+struct _krb_sound_callback_t
 {
 	const fchar_t* extension;
-	short* (*start)(kr_backend_sound_callback_t* _this, kr_backend_sound_info_t* _info);
+	short* (*start)(krb_sound_callback_t* _this, krb_sound_info_t* _info);
 };
 
-bool KEN_EXTERNAL krb_sound_load(kr_backend_sound_callback_t * callback, krb_file_t* file);
+bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound_callback_t * callback, krb_file_t* file);
 
 _KR_C_MODE_END

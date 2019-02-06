@@ -339,10 +339,13 @@ bool backend::Tga::load(krb_image_callback_t* callback, krb_file_t* file) noexce
 		is.read(pixels, total_byte);
 	}
 
+	size_t pitch = pixel_byte * head.width;
+
 	krb_image_info_t imginfo;
 	imginfo.width = head.width;
 	imginfo.height = head.height;
 	imginfo.pixelformat = cinfo.pf;
+	imginfo.pitchBytes = (uint32_t)pitch;
 	dest = (uint8_t*)callback->start(callback, &imginfo);
 
 	// check the descriptor
@@ -351,17 +354,30 @@ bool backend::Tga::load(krb_image_callback_t* callback, krb_file_t* file) noexce
 	{
 		if (head.descriptor & 0x10) // reverse horizontal
 		{
-			cinfo.memcpy_rev(dest, pixels, total_byte);
+			if (pitch != imginfo.pitchBytes)
+			{
+				uint8_t* src = pixels;
+				uint8_t* dest_end = dest + total_byte;
+				while (dest != dest_end)
+				{
+					cinfo.memcpy_rev(dest, src, pitch);
+					dest += imginfo.pitchBytes;
+					src += pitch;
+				}
+			}
+			else
+			{
+				cinfo.memcpy_rev(dest, pixels, total_byte);
+			}
 		}
 		else
 		{
-			size_t pitch = pixel_byte * head.width;
 			uint8_t * src = pixels + total_byte - pitch;
 			uint8_t* dest_end = dest + total_byte;
 			while (dest != dest_end)
 			{
 				memcpy(dest, src, pitch);
-				dest += pitch;
+				dest += imginfo.pitchBytes;
 				src -= pitch;
 			}
 		}
@@ -370,19 +386,32 @@ bool backend::Tga::load(krb_image_callback_t* callback, krb_file_t* file) noexce
 	{
 		if (head.descriptor & 0x10) // reverse horizontal
 		{
-			size_t pitch = pixel_byte * head.width;
 			uint8_t* src = pixels + total_byte - pitch;
 			uint8_t* dest_end = dest + total_byte;
 			while (dest != dest_end)
 			{
 				cinfo.memcpy_rev(dest, src, pitch);
-				dest += pitch;
+				dest += imginfo.pitchBytes;
 				src -= pitch;
 			}
 		}
 		else
 		{
-			memcpy(dest, pixels, total_byte);
+			if (pitch != imginfo.pitchBytes)
+			{
+				uint8_t* src = pixels;
+				uint8_t* dest_end = dest + total_byte;
+				while (dest != dest_end)
+				{
+					memcpy(dest, src, pitch);
+					dest += imginfo.pitchBytes;
+					src += pitch;
+				}
+			}
+			else
+			{
+				memcpy(dest, pixels, total_byte);
+			}
 		}
 	}
 	free(pixels);
@@ -390,13 +419,13 @@ bool backend::Tga::load(krb_image_callback_t* callback, krb_file_t* file) noexce
 	return dest;
 }
 
-bool backend::Tga::save(const krb_image_info_t* info, const void* pixelData, const uint32_t* palette, bool blCompress, krb_file_t* file) noexcept
+bool backend::Tga::save(const krb_image_save_info_t* info, krb_file_t* file) noexcept
 {
 	// from nova1492
 
 	tga_head_t head;
 	head.imagetype = 1;
-	if (blCompress)
+	if (info->tgaCompress)
 	{
 		switch (head.imagetype) // ????
 		{
@@ -418,10 +447,12 @@ bool backend::Tga::save(const krb_image_info_t* info, const void* pixelData, con
 	{
 	case PixelFormatIndex:
 	{
-		const uint32_t* palette_end = palette;
-		while (palette != palette_end)
+		assert(info->palette);
+		const uint32_t * palette_ptr = info->palette->color;
+		const uint32_t* palette_end = palette_ptr + 256;
+		while (palette_ptr != palette_end)
 		{
-			uint32_t color = *palette++;
+			uint32_t color = *palette_ptr++;
 			color3bytes_t trib;
 			trib.r = (uint8_t)(color >> 16);
 			trib.g = (uint8_t)(color >> 8);
@@ -450,7 +481,22 @@ bool backend::Tga::save(const krb_image_info_t* info, const void* pixelData, con
 	}
 	else
 	{
-		krb_fwrite(file, pixelData, info->width * info->height * cinfo->size);
+		if (info->pitchBytes == info->width * cinfo->size)
+		{
+			krb_fwrite(file, info->data, info->width * info->height * cinfo->size);
+		}
+		else
+		{
+			uint8_t* src = (uint8_t*)info->data;
+			size_t pitchBytes = info->pitchBytes;
+			size_t widthBytes = info->width * cinfo->size;
+			uint8_t* src_end = src + pitchBytes * info->height;
+			while (src != src_end)
+			{
+				krb_fwrite(file, src, widthBytes);
+				src += pitchBytes;
+			}
+		}
 	}
 
 	//

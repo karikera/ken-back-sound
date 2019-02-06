@@ -86,7 +86,7 @@ inline void krb_fclose(krb_file_t* file) {
 #define KRB_EXTENSION(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 enum krb_extension_t
 {
-	ExtensionImageInvalid = 0,
+	ExtensionInvalid = 0,
 	ExtensionImageBmp = KRB_EXTENSION('B', 'M', 'P', '\0'),
 	ExtensionImageJpg = KRB_EXTENSION('J', 'P', 'G', '\0'),
 	ExtensionImageJpeg = KRB_EXTENSION('J', 'P', 'E', 'G'),
@@ -123,11 +123,11 @@ inline krb_extension_t krb_make_extension(const char* extension)
 		}
 		else
 		{
-			return ExtensionImageInvalid;
+			return ExtensionInvalid;
 		}
 		v |= (uint32_t)chr << offset;
 		offset += 8;
-		if (offset >= 32) return ExtensionImageInvalid;
+		if (offset >= 32) return ExtensionInvalid;
 	}
 	return (krb_extension_t)v;
 }
@@ -152,11 +152,11 @@ inline krb_extension_t krb_make_extension_16(const char16_t* extension)
 		}
 		else
 		{
-			return ExtensionImageInvalid;
+			return ExtensionInvalid;
 		}
 		v |= (uint32_t)chr << offset;
 		offset += 8;
-		if (offset >= 32) return ExtensionImageInvalid;
+		if (offset >= 32) return ExtensionInvalid;
 	}
 	return (krb_extension_t)v;
 }

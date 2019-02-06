@@ -1,6 +1,15 @@
-[submodule "ken-back-sound/libvorbis"]
+[submodule "ken-res-loader/libvorbis"]
 	path = ken-back-sound/libvorbis
 	url = https://github.com/karikera/libvorbis-bin
-[submodule "ken-back-sound/libogg"]
+[submodule "ken-res-loader/libogg"]
 	path = ken-back-sound/libogg
 	url = https://github.com/karikera/libogg-bin
+[submodule "ken-res-loader/libpng"]
+	path = ken-res-loader/libpng
+	url = https://github.com/karikera/libpng-bin
+[submodule "ken-res-loader/jpeg"]
+	path = ken-res-loader/jpeg
+	url = https://github.com/karikera/jpeg-bin
+[submodule "ken-res-loader/zlib"]
+	path = ken-res-loader/zlib
+	url = https://github.com/karikera/zlib-bin

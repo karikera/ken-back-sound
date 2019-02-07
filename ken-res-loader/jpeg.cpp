@@ -12,7 +12,11 @@ extern "C"
 
 #include "assert.h"
 
+#ifdef _DEBUG
+#pragma comment(lib, "jpegd.lib")
+#else
 #pragma comment(lib, "jpeg.lib")
+#endif
 
 struct my_error_mgr {
 	struct jpeg_error_mgr pub;    /* "public" fields */

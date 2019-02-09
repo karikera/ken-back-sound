@@ -98,27 +98,24 @@ bool kr::backend::Png::load(krb_image_callback_t* callback, krb_file_t * file) n
 
 	png_read_update_info(png_ptr, info_ptr);
 
-	size_t uRowBytes = png_get_rowbytes(png_ptr, info_ptr);
+	imginfo.pitchBytes = (uint32_t)png_get_rowbytes(png_ptr, info_ptr);
 
 	switch (BltBits)
 	{
 	case 32:
 	{
 		imginfo.pixelformat = PixelFormatARGB8;
-		size_t uRowBytes = png_get_rowbytes(png_ptr, info_ptr);
 		break;
 	}
 	case 24:
 	{
 		imginfo.pixelformat = PixelFormatRGB8;
-		size_t uRowBytes = png_get_rowbytes(png_ptr, info_ptr);
 		break;
 	}
 	default:
 		assert(!"Not implemented Yet");
 		return false;
 	}
-
 	{
 		uint8_t* surf = (uint8_t*)callback->start(callback, &imginfo);
 

@@ -116,8 +116,9 @@ bool kr::backend::Png::load(krb_image_callback_t* callback, krb_file_t * file) n
 		assert(!"Not implemented Yet");
 		return false;
 	}
+	if (callback->start(callback, &imginfo))
 	{
-		uint8_t* surf = (uint8_t*)callback->start(callback, &imginfo);
+		uint8_t* surf = (uint8_t*)imginfo.data;
 
 		uint32_t H = imginfo.height;
 		png_bytep* row_pointers = new png_bytep[H];

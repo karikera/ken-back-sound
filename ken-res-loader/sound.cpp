@@ -20,6 +20,8 @@
 #pragma comment(lib, "libvorbisfile.lib")
 #endif
 
+using namespace kr;
+
 constexpr uint16_t WAVE_FORMAT_TAG = 1;
 
 namespace
@@ -32,14 +34,14 @@ namespace
 		uint16_t blockAlign;
 	} kr_backend_wave_format_base;
 
-	bool loadFromOgg(krb_sound_callback_t * callback, OggVorbis_File* vf) noexcept
+	bool loadFromOgg(KrbSoundCallback * callback, OggVorbis_File* vf) noexcept
 	{
 		vorbis_info *  vi;
 		vi = ov_info(vf, -1);
 		if (vi == nullptr) return false;
 
 		
-		krb_sound_info_t info;
+		KrbSoundInfo info;
 		info.format.formatTag = WAVE_FORMAT_TAG;
 		info.format.channels = vi->channels;
 		info.format.bitsPerSample = 16;
@@ -69,32 +71,32 @@ namespace
 	}
 }
 
-extern "C" bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound_callback_t * callback, krb_file_t* file)
+extern "C" bool KEN_EXTERNAL krb_sound_load(KrbExtension extension, KrbSoundCallback * callback, KrbFile* file)
 {
 	kr::backend::ReadStream is(file);
 
 	switch (extension)
 	{
-	case ExtensionSoundOpus:
+	case KrbExtension::SoundOpus:
 		break;
-	case ExtensionSoundOgg:
+	case KrbExtension::SoundOgg:
 	{
 
 		ov_callbacks callbacks = {
 			[](void* buffer, size_t elementSize, size_t elementCount, void* fp)->size_t {
-			return krb_fread((krb_file_t*)fp, buffer, elementSize * elementCount);
+			return ((KrbFile*)fp)->read(buffer, elementSize * elementCount);
 		},
 			[](void* fp, ogg_int64_t offset, int whence)->int {
 				switch (whence)
 				{
-				case SEEK_SET: krb_fseek_set((krb_file_t*)fp, offset); break;
-				case SEEK_CUR: krb_fseek_cur((krb_file_t*)fp, offset); break;
-				case SEEK_END: krb_fseek_end((krb_file_t*)fp, offset); break;
+				case SEEK_SET: ((KrbFile*)fp)->seek_set(offset); break;
+				case SEEK_CUR: ((KrbFile*)fp)->seek_cur(offset); break;
+				case SEEK_END: ((KrbFile*)fp)->seek_end(offset); break;
 				}
 				return 0;
 			},
 			[](void* fp)->int { return 0; },
-			[](void* fp)->long { return (long)krb_ftell((krb_file_t*)fp); }
+			[](void* fp)->long { return (long)((KrbFile*)fp)->tell(); }
 		};
 		OggVorbis_File vf;
 		int res = ov_open_callbacks((void*)file, &vf, nullptr, 0, callbacks);
@@ -114,10 +116,10 @@ extern "C" bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound
 		ov_clear(&vf);
 		return ret;
 	}
-	case ExtensionSoundMp3:
+	case KrbExtension::SoundMp3:
 		try
 		{
-			uint64_t file_start_pos = krb_ftell(file);
+			uint64_t file_start_pos = file->tell();
 
 			OpenMP3::Library openmp3;
 			OpenMP3::Iterator itr(openmp3, file);
@@ -150,10 +152,10 @@ extern "C" bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound
 				totalSampleCount *= SAMPLE_PER_FRAME;
 			}
 
-			krb_fseek_set(file, file_start_pos);
+			file->seek_set(file_start_pos);
 
 
-			krb_sound_info_t info;
+			KrbSoundInfo info;
 			info.format.bitsPerSample = 16;
 			info.format.channels = mono ? 1 : 2;
 			info.format.samplesPerSec = maxSampleRate;
@@ -256,7 +258,7 @@ extern "C" bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound
 		{
 			return false;
 		}
-	case ExtensionSoundWav:
+	case KrbExtension::SoundWav:
 	{
 		if (!is.testSignature("RIFF"_sig)) return false;
 		uint32_t fullSize = is.read32();
@@ -264,9 +266,9 @@ extern "C" bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound
 
 		uint32_t formatSize = is.findChunk("fmt "_sig);
 		if (formatSize == -1) return false;
-		if (formatSize < sizeof(krb_wave_format_t)) return false;
+		if (formatSize < sizeof(KrbWaveFormat)) return false;
 
-		krb_sound_info_t info;
+		KrbSoundInfo info;
 		is.readStructure(&info.format, sizeof(info.format), formatSize);
 		if (info.format.formatTag != WAVE_FORMAT_TAG) return false;
 
@@ -278,7 +280,7 @@ extern "C" bool KEN_EXTERNAL krb_sound_load(krb_extension_t extension, krb_sound
 		short* buffer = callback->start(callback, &info);
 		if (buffer != nullptr)
 		{
-			krb_fread(file, buffer, dataSize);
+			file->read(buffer, dataSize);
 		}
 		return true;
 	}

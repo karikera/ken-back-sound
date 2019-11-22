@@ -12,47 +12,49 @@
 #pragma comment(lib, "zlib.lib")
 #endif
 
-const krb_file_vtable_t vtable = {
-	[](krb_file_t * fp, const void* data, size_t size) {
+using namespace kr;
+
+const KrbFileVFTable vftable = {
+	[](KrbFile * fp, const void* data, size_t size) {
 		fwrite(data, 1, size, (FILE*)fp->param);
 	},
-	[](krb_file_t * fp, void* data, size_t size)->size_t {
+	[](KrbFile * fp, void* data, size_t size)->size_t {
 		return fread(data, 1, size, (FILE*)fp->param);
 	},
-	[](krb_file_t * fp)->uint64_t {
+	[](KrbFile * fp)->uint64_t {
 #ifdef _MSC_VER
 		return _ftelli64((FILE*)fp->param);
 #else
 		return ftello64((FILE*)fp->param);
 #endif
 	},
-	[](krb_file_t * fp, uint64_t pos) {
+	[](KrbFile * fp, uint64_t pos) {
 #ifdef _MSC_VER
 		_fseeki64((FILE*)fp->param, pos, SEEK_SET);
 #else
 		fseeko64((FILE*)fp->param, pos, SEEK_SET);
 #endif
 	},
-	[](krb_file_t * fp, uint64_t pos) {
+	[](KrbFile * fp, uint64_t pos) {
 #ifdef _MSC_VER
 		_fseeki64((FILE*)fp->param, pos, SEEK_CUR);
 #else
 		fseeko64((FILE*)fp->param, pos, SEEK_CUR);
 #endif
 	},
-	[](krb_file_t * fp, uint64_t pos) {
+	[](KrbFile * fp, uint64_t pos) {
 #ifdef _MSC_VER
 		_fseeki64((FILE*)fp->param, pos, SEEK_END);
 #else
 		fseeko64((FILE*)fp->param, pos, SEEK_END);
 #endif
 	},
-	[](krb_file_t * fp){
+	[](KrbFile * fp){
 		fclose((FILE*)fp->param);
 	}
 };
 
-bool KEN_EXTERNAL krb_fopen_std_file(krb_file_t* fp, const fchar_t* path, const fchar_t* mode)
+bool KEN_EXTERNAL krb_fopen_std_file(KrbFile* fp, const fchar_t* path, const fchar_t* mode)
 {
 	fp->param = nullptr;
 #ifdef _MSC_VER
@@ -61,6 +63,6 @@ bool KEN_EXTERNAL krb_fopen_std_file(krb_file_t* fp, const fchar_t* path, const 
 	fp->param = fopen64(path, mode);
 #endif
 	if (!fp->param) return false;
-	fp->vtable = &vtable;
+	fp->vftable = &vftable;
 	return true;
 }

@@ -12,6 +12,8 @@ extern "C"
 
 #include "assert.h"
 
+using namespace kr;
+
 #ifdef _DEBUG
 #pragma comment(lib, "jpegd.lib")
 #else
@@ -45,10 +47,10 @@ namespace
 	constexpr size_t BUFFERING_SIZE = 8192;
 
 	struct kr_jpeg_source_mgr : jpeg_source_mgr {
-		krb_file_t* file;
+		KrbFile* file;
 		JOCTET buffer[BUFFERING_SIZE];
 
-		static void make(j_decompress_ptr cinfo, krb_file_t* in) noexcept
+		static void make(j_decompress_ptr cinfo, KrbFile* in) noexcept
 		{
 			if (cinfo->src == NULL)
 			{
@@ -64,7 +66,7 @@ namespace
 			src->fill_input_buffer = [](j_decompress_ptr cinfo)->boolean{
 				kr_jpeg_source_mgr* src = (kr_jpeg_source_mgr*)(cinfo->src);
 				src->next_input_byte = src->buffer;
-				src->bytes_in_buffer = krb_fread(src->file, src->buffer, BUFFERING_SIZE);
+				src->bytes_in_buffer = src->file->read(src->buffer, BUFFERING_SIZE);
 				return src->bytes_in_buffer != 0;
 			};
 			src->skip_input_data = [](j_decompress_ptr cinfo, long count)
@@ -78,7 +80,7 @@ namespace
 				else
 				{
 					src->bytes_in_buffer = 0;
-					krb_fseek_cur(src->file, count - src->bytes_in_buffer);
+					src->file->seek_cur(count - src->bytes_in_buffer);
 				}
 			};
 			src->resync_to_restart = jpeg_resync_to_restart; /* use default method */
@@ -90,10 +92,10 @@ namespace
 	};
 
 	struct kr_jpeg_destination_mgr : jpeg_destination_mgr {
-		krb_file_t* file;
+		KrbFile* file;
 		JOCTET buffer[BUFFERING_SIZE];
 
-		static void make(j_compress_ptr cinfo, krb_file_t* in) noexcept
+		static void make(j_compress_ptr cinfo, KrbFile* in) noexcept
 		{
 			if (cinfo->dest == NULL)
 			{
@@ -108,14 +110,14 @@ namespace
 			};
 			dest->empty_output_buffer = [](j_compress_ptr cinfo)->boolean {
 				kr_jpeg_destination_mgr* dest = (kr_jpeg_destination_mgr*)(cinfo->dest);
-				krb_fwrite(dest->file, dest->buffer, BUFFERING_SIZE);
+				dest->file->write(dest->buffer, BUFFERING_SIZE);
 				dest->next_output_byte = dest->buffer;
 				dest->free_in_buffer = BUFFERING_SIZE;
 				return true;
 			};
 			dest->term_destination = [](j_compress_ptr cinfo) {
 				kr_jpeg_destination_mgr* dest = (kr_jpeg_destination_mgr*)(cinfo->dest);
-				krb_fwrite(dest->file, dest->buffer, BUFFERING_SIZE);
+				dest->file->write(dest->buffer, BUFFERING_SIZE);
 				dest->next_output_byte = dest->buffer;
 				dest->free_in_buffer = BUFFERING_SIZE;
 			};
@@ -124,7 +126,7 @@ namespace
 	};
 }
 
-bool kr::backend::Jpeg::save(const krb_image_save_info_t* info, krb_file_t* file) noexcept
+bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexcept
 {
 	assert(info->pixelformat == PixelFormatBGR8);
 
@@ -228,7 +230,7 @@ bool kr::backend::Jpeg::save(const krb_image_save_info_t* info, krb_file_t* file
 	return true;
 }
 
-bool kr::backend::Jpeg::load(krb_image_callback_t* callback, krb_file_t* file) noexcept
+bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 {
 	/* This struct contains the JPEG decompression parameters and pointers to
 	* working space (which is allocated as needed by the JPEG library).
@@ -299,7 +301,7 @@ bool kr::backend::Jpeg::load(krb_image_callback_t* callback, krb_file_t* file) n
 	/* JSAMPLEs per row in output buffer */
 	row_stride = cinfo.output_width * cinfo.output_components;
 
-	krb_image_info_t imginfo;
+	KrbImageInfo imginfo;
 	imginfo.width = cinfo.output_width;
 	imginfo.pitchBytes = row_stride;
 	imginfo.height = cinfo.output_height;

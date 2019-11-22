@@ -63,12 +63,12 @@ struct ColorInfos
 	size_t size;
 	void (*memcpy_rev)(uint8_t* dest, uint8_t* src, size_t bytes);
 	uint8_t* (*fill_line)(uint8_t* dest, void* src, uint8_t bytes);
-	void (*tga_compress)(krb_file_t* file, void* src, size_t total_bytes);
+	void (*tga_compress)(KrbFile* file, void* src, size_t total_bytes);
 };
 
 
 template <typename PX>
-void tga_compress(krb_file_t* file, void* src_void, size_t total_bytes) noexcept
+void tga_compress(KrbFile* file, void* src_void, size_t total_bytes) noexcept
 {
 	PX* src = (PX*)src_void;
 	// encoding..
@@ -92,8 +92,8 @@ void tga_compress(krb_file_t* file, void* src_void, size_t total_bytes) noexcept
 			if (diff > 0)
 			{
 				chunk = diff - 1;
-				krb_fwrite(file, &chunk, sizeof(chunk));
-				krb_fwrite(file, pixelDiff, diff * sizeof(PX));
+				file->write(&chunk, sizeof(chunk));
+				file->write(pixelDiff, diff * sizeof(PX));
 				diff = 0;
 			}
 
@@ -103,8 +103,8 @@ void tga_compress(krb_file_t* file, void* src_void, size_t total_bytes) noexcept
 			if (same == 128)
 			{
 				chunk = same + 127;
-				krb_fwrite(file, &chunk, sizeof(chunk));
-				krb_fwrite(file, &pixelSame, sizeof(pixelSame));
+				file->write(&chunk, sizeof(chunk));
+				file->write(&pixelSame, sizeof(pixelSame));
 				same = 0;
 			}
 		}
@@ -113,8 +113,8 @@ void tga_compress(krb_file_t* file, void* src_void, size_t total_bytes) noexcept
 			if (same > 0)
 			{
 				chunk = same + 127;
-				krb_fwrite(file, &chunk, sizeof(chunk));
-				krb_fwrite(file, &pixelSame, sizeof(pixelSame));
+				file->write(&chunk, sizeof(chunk));
+				file->write(&pixelSame, sizeof(pixelSame));
 				same = 0;
 			}
 
@@ -123,8 +123,8 @@ void tga_compress(krb_file_t* file, void* src_void, size_t total_bytes) noexcept
 			if (diff == 128)
 			{
 				chunk = diff - 1;
-				krb_fwrite(file, &chunk, sizeof(chunk));
-				krb_fwrite(file, pixelDiff, diff * sizeof(PX));
+				file->write(&chunk, sizeof(chunk));
+				file->write(pixelDiff, diff * sizeof(PX));
 				diff = 0;
 			}
 			pixelPrev = pixelNext;
@@ -134,19 +134,19 @@ void tga_compress(krb_file_t* file, void* src_void, size_t total_bytes) noexcept
 	if (same > 0)
 	{
 		chunk = 127 + same + 1;
-		krb_fwrite(file, &chunk, sizeof(chunk));
-		krb_fwrite(file, &pixelSame, sizeof(PX));
+		file->write(&chunk, sizeof(chunk));
+		file->write(&pixelSame, sizeof(PX));
 	}
 	if (diff > 0)
 	{
 		chunk = diff - 1 + 1;
-		krb_fwrite(file, &chunk, sizeof(chunk));
-		krb_fwrite(file, pixelDiff, diff * sizeof(PX));
+		file->write(&chunk, sizeof(chunk));
+		file->write(pixelDiff, diff * sizeof(PX));
 
 		//
 		// a, b 로 끝날 경우 p_diffbuf에는 a까지만 들어간 상태이므로 b를 넣어줘야 한다. (p_pixebufNext)
 		//
-		krb_fwrite(file, &pixelPrev, sizeof(PX));
+		file->write(&pixelPrev, sizeof(PX));
 	}
 	free(pixelDiff);
 }
@@ -251,7 +251,7 @@ static const ColorInfos colorInfos[4] = {
 	},
 };
 
-bool backend::Tga::load(krb_image_callback_t* callback, krb_file_t* file) noexcept
+bool backend::Tga::load(KrbImageCallback* callback, KrbFile* file) noexcept
 {
 	ReadStream is(file);
 	tga_head_t head;
@@ -341,7 +341,7 @@ bool backend::Tga::load(krb_image_callback_t* callback, krb_file_t* file) noexce
 
 	size_t pitch = pixel_byte * head.width;
 
-	krb_image_info_t imginfo;
+	KrbImageInfo imginfo;
 	imginfo.width = head.width;
 	imginfo.height = head.height;
 	imginfo.pixelformat = cinfo.pf;
@@ -419,7 +419,7 @@ bool backend::Tga::load(krb_image_callback_t* callback, krb_file_t* file) noexce
 	return dest;
 }
 
-bool backend::Tga::save(const krb_image_save_info_t* info, krb_file_t* file) noexcept
+bool backend::Tga::save(const KrbImageSaveInfo* info, KrbFile* file) noexcept
 {
 	// from nova1492
 
@@ -440,7 +440,7 @@ bool backend::Tga::save(const krb_image_save_info_t* info, krb_file_t* file) noe
 
 	// 뒤집히지 않은 상태로 저장한다. 이것은 다시 불러올 때 뒤집는 처리를 하지 않아서 좋다.
 	head.descriptor = 0x20;
-	krb_fwrite(file, &head, sizeof(head));
+	file->write(&head, sizeof(head));
 
 	const ColorInfos* cinfo;
 	switch (info->pixelformat)
@@ -457,7 +457,7 @@ bool backend::Tga::save(const krb_image_save_info_t* info, krb_file_t* file) noe
 			trib.r = (uint8_t)(color >> 16);
 			trib.g = (uint8_t)(color >> 8);
 			trib.b = (uint8_t)(color >> 0);
-			krb_fwrite(file, &trib, 3);
+			file->write(&trib, 3);
 		}
 		cinfo = &colorInfos[0];
 		break;
@@ -483,7 +483,7 @@ bool backend::Tga::save(const krb_image_save_info_t* info, krb_file_t* file) noe
 	{
 		if (info->pitchBytes == info->width * cinfo->size)
 		{
-			krb_fwrite(file, info->data, info->width * info->height * cinfo->size);
+			file->write(info->data, info->width * info->height * cinfo->size);
 		}
 		else
 		{
@@ -493,7 +493,7 @@ bool backend::Tga::save(const krb_image_save_info_t* info, krb_file_t* file) noe
 			uint8_t* src_end = src + pitchBytes * info->height;
 			while (src != src_end)
 			{
-				krb_fwrite(file, src, widthBytes);
+				file->write(src, widthBytes);
 				src += pitchBytes;
 			}
 		}
@@ -506,7 +506,7 @@ bool backend::Tga::save(const krb_image_save_info_t* info, krb_file_t* file) noe
 	// 20x20이 안되는 이미지는 반드시 더미가 있어야 읽혀진다. ACDsee에서는 더미와 상관없이 잘 읽혀졌다.
 	//
 	uint32_t dummy = 0;
-	krb_fwrite(file, &dummy, 4);
-	krb_fwrite(file, &dummy, 4);
+	file->write(&dummy, 4);
+	file->write(&dummy, 4);
 	return true;
 }

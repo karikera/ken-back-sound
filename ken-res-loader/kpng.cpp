@@ -14,11 +14,11 @@ extern "C" {
 #pragma comment(lib, "libpng16.lib")
 #endif
 
-bool kr::backend::Png::load(krb_image_callback_t* callback, krb_file_t * file) noexcept
+bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 {
 	png_infop				info_ptr;
 	png_structp				png_ptr;
-	krb_image_info_t imginfo;
+	KrbImageInfo imginfo;
 
 	int						bit_depth, color_type, interlace_type;
 	int						BltBits;
@@ -51,9 +51,9 @@ bool kr::backend::Png::load(krb_image_callback_t* callback, krb_file_t * file) n
 	// png_init_io(png_ptr, file);
 	png_set_read_fn(png_ptr, file, [](png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead)
 		{
-			krb_file_t* file = (krb_file_t*)png_get_io_ptr(png_ptr);
+			KrbFile* file = (KrbFile*)png_get_io_ptr(png_ptr);
 			if (file == nullptr) return;
-			krb_fread(file, outBytes, byteCountToRead);
+			file->read(outBytes, byteCountToRead);
 		});
 	
 	// The call to png_read_info() gives us all of the information from the
@@ -137,7 +137,7 @@ bool kr::backend::Png::load(krb_image_callback_t* callback, krb_file_t * file) n
 	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)nullptr);
 	return true;
 }
-bool kr::backend::Png::save(const krb_image_save_info_t* info, krb_file_t* file) noexcept
+bool kr::backend::Png::save(const KrbImageSaveInfo* info, KrbFile* file) noexcept
 {
 	assert(!"Not Implemented Yet");
 	return false;

@@ -3,7 +3,7 @@
 #include "types.h"
 #include "tables.h"
 
-
+using namespace kr;
 
 //
 //
@@ -12,13 +12,13 @@ struct OpenMP3::Iterator::Private
 {
 	static size_t GetPosition(const Iterator & itr)
 	{
-		return (size_t)krb_ftell(itr.m_file);
+		return (size_t)itr.m_file->tell();
 	}
 
 	template <class TYPE> static const TYPE Read(Iterator & itr)
 	{
 		TYPE type;
-		size_t readed = krb_fread(itr.m_file, &type, sizeof(TYPE));
+		size_t readed = itr.m_file->read(&type, sizeof(TYPE));
 		if (readed != sizeof(TYPE)) type = 0;
 		return type;
 	}
@@ -27,12 +27,10 @@ struct OpenMP3::Iterator::Private
 	{
 		UInt32 word = Read<UInt32>(itr);
 
-		UInt8 * bytes = (UInt8*)(&word);
-
-		UInt b1 = bytes[0];
-		UInt b2 = bytes[1];
-		UInt b3 = bytes[2];
-		UInt b4 = bytes[3];
+		uint8_t b1 = (uint8_t)(word);
+		uint8_t b2 = (uint8_t)(word>>8);
+		uint8_t b3 = (uint8_t)(word>>16);
+		uint8_t b4 = (uint8_t)(word>>24);
 
 		return (b1 << 24) | (b2 << 16) | (b3 << 8) | (b4 << 0);
 	}
@@ -102,7 +100,7 @@ void OpenMP3::Frame::SkipFirst() noexcept
 //
 //
 
-OpenMP3::Iterator::Iterator(const Library & library, krb_file_t* file)
+OpenMP3::Iterator::Iterator(const Library & library, KrbFile* file)
 	: m_file(file)
 {
 }
@@ -122,7 +120,7 @@ OpenMP3::Result OpenMP3::Iterator::GetNext(Frame & frame)
 	// if ((word & 0xffe00000) != 0xffe00000) return kResultInvalidFrame;
 	while ((word & 0xffe00000) != 0xffe00000)
 	{
-		krb_fseek_cur(m_file, -3);
+		m_file->seek_cur(-3);
 
 		word = Private::ReadWord(*this);
 	}
@@ -172,7 +170,7 @@ OpenMP3::Result OpenMP3::Iterator::GetNext(Frame & frame)
 
 	if (!protection_bit)
 	{
-		krb_fseek_cur(m_file, 2);
+		m_file->seek_cur(2);
 	}
 
 	
@@ -190,7 +188,7 @@ OpenMP3::Result OpenMP3::Iterator::GetNext(Frame & frame)
 	
 	if (frame.m_ptr) free(frame.m_ptr);
 	frame.m_ptr = (UInt8*)malloc(framesize);
-	krb_fread(m_file, frame.m_ptr, framesize);
+	m_file->read(frame.m_ptr, framesize);
 
 	frame.m_datasize = framesize - (protection_bit ? 0 : 2);
 

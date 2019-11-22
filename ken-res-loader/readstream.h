@@ -23,7 +23,7 @@ namespace kr
 		class ReadStream
 		{
 		public:
-			ReadStream(krb_file_t* file) noexcept;
+			ReadStream(KrbFile* file) noexcept;
 
 			uint32_t read32() noexcept;
 
@@ -35,7 +35,7 @@ namespace kr
 			bool readStructure(void* value, uintptr_t size, uintptr_t sizeInFile) noexcept;
 			
 		private:
-			krb_file_t* m_file;
+			KrbFile* m_file;
 		};
 	}
 }

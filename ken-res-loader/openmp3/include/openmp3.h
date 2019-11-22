@@ -116,7 +116,7 @@ public:
 
 	//lifetime
 
-	Iterator(const Library & library, krb_file_t * file);
+	Iterator(const Library & library, kr::KrbFile * file);
 
 
 
@@ -129,7 +129,7 @@ private:
 
 	struct Private;
 	
-	krb_file_t* m_file;
+	kr::KrbFile* m_file;
 };
 
 

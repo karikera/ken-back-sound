@@ -27,14 +27,14 @@ void* kr::backend::TempBuffer::operator()(size_t size) noexcept
 		return m_buffer;
 	}
 }
-kr::backend::ReadStream::ReadStream(krb_file_t * file) noexcept
+kr::backend::ReadStream::ReadStream(KrbFile * file) noexcept
 	:m_file(file)
 {
 }
 uint32_t kr::backend::ReadStream::read32() noexcept
 {
 	uint32_t sig;
-	krb_fread(m_file, &sig, 4);
+	m_file->read(&sig, 4);
 	return sig;
 }
 bool kr::backend::ReadStream::testSignature(uint32_t signature) noexcept
@@ -46,13 +46,13 @@ uint32_t kr::backend::ReadStream::findChunk(uint32_t signature) noexcept
 	while (!testSignature(signature))
 	{
 		uint32_t size = read32();
-		krb_fseek_cur(m_file, size);
+		m_file->seek_cur(size);
 	}
 	return read32();
 }
 bool kr::backend::ReadStream::read(void* value, uintptr_t size) noexcept
 {
-	size_t readed = krb_fread(m_file, value, size);
+	size_t readed = m_file->read(value, size);
 	return readed == size;
 }
 
@@ -61,16 +61,16 @@ bool kr::backend::ReadStream::readStructure(void* value, uintptr_t size, uintptr
 	char* dest = (char*)value;
 	if (sizeInFile < size)
 	{
-		size_t readed = krb_fread(m_file, dest, sizeInFile);
+		size_t readed = m_file->read(dest, sizeInFile);
 		if (readed != sizeInFile) return false;
 		memset(dest + sizeInFile, 0, size - sizeInFile);
 		return true;
 	}
 	else
 	{
-		size_t readed = krb_fread(m_file, dest, size);
+		size_t readed = m_file->read(dest, size);
 		if (readed != sizeInFile) return false;
-		krb_fseek_cur(m_file, sizeInFile - size);
+		m_file->seek_cur(sizeInFile - size);
 		return true;
 	}
 }

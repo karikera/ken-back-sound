@@ -4,9 +4,11 @@
 #include "tga.h"
 #include "util.h"
 
+#include <string.h>
 #include <assert.h>
-#include <memory.h>
 #include <stdlib.h>
+
+using namespace kr;
 
 #pragma pack(push, 1)
 struct BMP_HEADER {
@@ -39,9 +41,9 @@ struct BITMAP_FILE
 	{
 		return (biWidth * biBitCount + 31) >> 5 << 2;
 	}
-	const krb_image_palette_t* getPalette() const noexcept
+	const KrbImagePalette* getPalette() const noexcept
 	{
-		return (krb_image_palette_t*)((uint8_t*)this + sizeof(BITMAP_FILE));
+		return (KrbImagePalette*)((uint8_t*)this + sizeof(BITMAP_FILE));
 	}
 };
 
@@ -49,27 +51,27 @@ struct BITMAP_FILE
 
 
 
-bool KEN_EXTERNAL krb_load_image(krb_extension_t extension, krb_image_callback_t* callback, krb_file_t* file)
+bool KEN_EXTERNAL krb_load_image(KrbExtension extension, KrbImageCallback* callback, KrbFile* file)
 {
 	switch (extension)
 	{
-	case ExtensionImagePng:
+	case KrbExtension::ImagePng:
 		return kr::backend::Png::load(callback, file);
-	case ExtensionImageJpeg:
-	case ExtensionImageJpg:
+	case KrbExtension::ImageJpeg:
+	case KrbExtension::ImageJpg:
 		return kr::backend::Jpeg::load(callback, file);
-	case ExtensionImageTga:
+	case KrbExtension::ImageTga:
 		return kr::backend::Tga::load(callback, file);
-	case ExtensionImageBmp:
+	case KrbExtension::ImageBmp:
 	{
 		BMP_HEADER bfh;
-		krb_fread(file, &bfh, sizeof(bfh));
+		file->read(&bfh, sizeof(bfh));
 		if (bfh.bfType != "BM"_sig) return false;
 
 		size_t tempBufferSize = bfh.bfOffBits - sizeof(bfh);
 		uint8_t * tempBuffer = (uint8_t*)malloc(tempBufferSize);
 		BITMAP_FILE * bi = (BITMAP_FILE*)tempBuffer;
-		krb_fread(file, tempBuffer, tempBufferSize);
+		file->read(tempBuffer, tempBufferSize);
 
 		size_t widthBytes = (bi->biWidth * bi->biBitCount + 7) / 8;
 		widthBytes = (widthBytes + 3) & ~3;
@@ -78,9 +80,9 @@ bool KEN_EXTERNAL krb_load_image(krb_extension_t extension, krb_image_callback_t
 			bi->biSizeImage = (int)totalBytes;
 
 		uint8_t * imageBuffer = (uint8_t*)malloc(bi->biSizeImage);
-		krb_fread(file, imageBuffer, bi->biSizeImage);
+		file->read(imageBuffer, bi->biSizeImage);
 
-		krb_image_info_t info;
+		KrbImageInfo info;
 		info.width = bi->biWidth;
 		info.height = bi->biHeight;
 		info.pitchBytes = (uint32_t)widthBytes;
@@ -139,18 +141,18 @@ bool KEN_EXTERNAL krb_load_image(krb_extension_t extension, krb_image_callback_t
 	}
 	return false;
 }
-bool KEN_EXTERNAL krb_save_image(krb_extension_t extension, const krb_image_save_info_t* info, krb_file_t* file)
+bool KEN_EXTERNAL krb_save_image(KrbExtension extension, const KrbImageSaveInfo* info, KrbFile* file)
 {
 	switch (extension)
 	{
-	case ExtensionImagePng:
+	case KrbExtension::ImagePng:
 		return kr::backend::Png::save(info, file);
-	case ExtensionImageJpg:
-	case ExtensionImageJpeg:
+	case KrbExtension::ImageJpg:
+	case KrbExtension::ImageJpeg:
 		return kr::backend::Jpeg::save(info, file);
-	case ExtensionImageTga:
+	case KrbExtension::ImageTga:
 		return kr::backend::Tga::save(info, file);
-	case ExtensionImageBmp:
+	case KrbExtension::ImageBmp:
 		assert(!"Not implemented yet");
 		//BMP_HEADER bfh;
 		//bfh.
@@ -171,7 +173,7 @@ bool KEN_EXTERNAL krb_save_image(krb_extension_t extension, const krb_image_save
 		//uint8_t * imageBuffer = (uint8_t*)malloc(bi->biSizeImage);
 		//krb_fread(file, imageBuffer, bi->biSizeImage);
 
-		//krb_image_info_t info;
+		//KrbImageInfo info;
 		//info.width = bi->biWidth;
 		//info.height = bi->biHeight;
 		//info.pitchBytes = widthBytes;

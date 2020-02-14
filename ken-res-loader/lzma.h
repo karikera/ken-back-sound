@@ -1,4 +1,17 @@
 #pragma once
+
+
+namespace kr
+{
+	namespace backend
+	{
+		class Lzma
+		{
+		public:
+		};
+	}
+}
+
 //
 //#include <KR3/main.h>
 //#include <KR3/wl/windows.h>

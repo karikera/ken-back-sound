@@ -78,6 +78,9 @@
     <ClCompile Include="kzip.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="compress.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="zlib_contrib\crypt.h">
@@ -150,6 +153,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="kzip.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="include\compress.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

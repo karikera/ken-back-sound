@@ -1,18 +1,16 @@
-//#pragma once
-//
-//#include "common.h"
-//
-//namespace kr
-//{
-//	class Decompress7z
-//	{
-//	public:
-//		void decompress(File* file);
-//		virtual void onFileRead(uint readcount, uint fullcount) noexcept;
-//
-//	private:
-//	};
-//	void unzip7z(pcstr filename, Progressor * prog);
-//	void unzip7z(pcstr16 filename, Progressor * prog);
-//	void unzip7z(File * file, Progressor * prog);
-//}
+#pragma once
+
+#include "include/compress.h"
+
+namespace kr
+{
+	namespace backend
+	{
+		class _7z
+		{
+		public:
+			static bool load(KrbCompressCallback* callback, KrbFile* file) noexcept;
+			// static bool save(const KrbImageSaveInfo* info, KrbFile* file) noexcept;
+		};
+	}
+}

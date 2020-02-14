@@ -132,6 +132,19 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>
+if "$(Configuration)" == "Debug" (
+set d=d
+) 
+if "$(Platform)" neq "Emscripten" (
+copy "$(ProjectDir)jpeg\lib\$(PlatformShortName)\jpeg%d%.dll" "$(OutDir)jpeg%d%.dll"
+copy "$(ProjectDir)libpng\lib\$(PlatformShortName)\libpng16%d%.dll" "$(OutDir)libpng16%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbis%d%.dll" "$(OutDir)libvorbis%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbisfile%d%.dll" "$(OutDir)libvorbisfile%d%.dll"
+copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.dll"
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -141,6 +154,19 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>
+if "$(Configuration)" == "Debug" (
+set d=d
+) 
+if "$(Platform)" neq "Emscripten" (
+copy "$(ProjectDir)jpeg\lib\$(PlatformShortName)\jpeg%d%.dll" "$(OutDir)jpeg%d%.dll"
+copy "$(ProjectDir)libpng\lib\$(PlatformShortName)\libpng16%d%.dll" "$(OutDir)libpng16%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbis%d%.dll" "$(OutDir)libvorbis%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbisfile%d%.dll" "$(OutDir)libvorbisfile%d%.dll"
+copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.dll"
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -156,6 +182,19 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command>
+if "$(Configuration)" == "Debug" (
+set d=d
+) 
+if "$(Platform)" neq "Emscripten" (
+copy "$(ProjectDir)jpeg\lib\$(PlatformShortName)\jpeg%d%.dll" "$(OutDir)jpeg%d%.dll"
+copy "$(ProjectDir)libpng\lib\$(PlatformShortName)\libpng16%d%.dll" "$(OutDir)libpng16%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbis%d%.dll" "$(OutDir)libvorbis%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbisfile%d%.dll" "$(OutDir)libvorbisfile%d%.dll"
+copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.dll"
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -171,16 +210,55 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command>
+if "$(Configuration)" == "Debug" (
+set d=d
+) 
+if "$(Platform)" neq "Emscripten" (
+copy "$(ProjectDir)jpeg\lib\$(PlatformShortName)\jpeg%d%.dll" "$(OutDir)jpeg%d%.dll"
+copy "$(ProjectDir)libpng\lib\$(PlatformShortName)\libpng16%d%.dll" "$(OutDir)libpng16%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbis%d%.dll" "$(OutDir)libvorbis%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbisfile%d%.dll" "$(OutDir)libvorbisfile%d%.dll"
+copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.dll"
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Emscripten'">
     <ClCompile>
       <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>
+if "$(Configuration)" == "Debug" (
+set d=d
+) 
+if "$(Platform)" neq "Emscripten" (
+copy "$(ProjectDir)jpeg\lib\$(PlatformShortName)\jpeg%d%.dll" "$(OutDir)jpeg%d%.dll"
+copy "$(ProjectDir)libpng\lib\$(PlatformShortName)\libpng16%d%.dll" "$(OutDir)libpng16%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbis%d%.dll" "$(OutDir)libvorbis%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbisfile%d%.dll" "$(OutDir)libvorbisfile%d%.dll"
+copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.dll"
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Emscripten'">
     <ClCompile>
       <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>
+if "$(Configuration)" == "Debug" (
+set d=d
+) 
+if "$(Platform)" neq "Emscripten" (
+copy "$(ProjectDir)jpeg\lib\$(PlatformShortName)\jpeg%d%.dll" "$(OutDir)jpeg%d%.dll"
+copy "$(ProjectDir)libpng\lib\$(PlatformShortName)\libpng16%d%.dll" "$(OutDir)libpng16%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbis%d%.dll" "$(OutDir)libvorbis%d%.dll"
+copy "$(ProjectDir)libvorbis\lib\$(PlatformShortName)\libvorbisfile%d%.dll" "$(OutDir)libvorbisfile%d%.dll"
+copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.dll"
+)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="7zlib.cpp" />
@@ -246,6 +324,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="kpng.cpp" />
+    <ClCompile Include="compress.cpp" />
     <ClCompile Include="readstream.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="tga.cpp" />
@@ -256,6 +335,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="7zlib.h" />
+    <ClInclude Include="include\compress.h" />
     <ClInclude Include="include\common.h" />
     <ClInclude Include="include\image.h" />
     <ClInclude Include="jpeg.h" />

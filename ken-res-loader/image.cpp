@@ -51,7 +51,7 @@ struct BITMAP_FILE
 
 
 
-bool KEN_EXTERNAL krb_load_image(KrbExtension extension, KrbImageCallback* callback, KrbFile* file)
+bool KEN_EXTERNAL kr::krb_load_image(KrbExtension extension, KrbImageCallback* callback, KrbFile* file)
 {
 	switch (extension)
 	{
@@ -141,7 +141,7 @@ bool KEN_EXTERNAL krb_load_image(KrbExtension extension, KrbImageCallback* callb
 	}
 	return false;
 }
-bool KEN_EXTERNAL krb_save_image(KrbExtension extension, const KrbImageSaveInfo* info, KrbFile* file)
+bool KEN_EXTERNAL kr::krb_save_image(KrbExtension extension, const KrbImageSaveInfo* info, KrbFile* file)
 {
 	switch (extension)
 	{

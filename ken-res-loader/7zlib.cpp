@@ -1,9 +1,28 @@
-//#include "7zlib.h"
+#include "7zlib.h"
+
+#include <stdio.h>
+#include <string.h>
+
+// #include "lzmacommon.h"
+
+using namespace kr;
+
 //
-//#include <stdio.h>
-//#include <string.h>
+//namespace kr
+//{
+//	class Decompress7z
+//	{
+//	public:
+//		void decompress(File* file);
+//		virtual void onFileRead(uint readcount, uint fullcount) noexcept;
 //
-//#include "lzmacommon.h"
+//	private:
+//	};
+//	void unzip7z(pcstr filename, Progressor * prog);
+//	void unzip7z(pcstr16 filename, Progressor * prog);
+//	void unzip7z(File * file, Progressor * prog);
+//}
+//
 //
 //extern "C"
 //{
@@ -167,3 +186,8 @@
 //	return de.decompress((kr::File*)file);
 //}
 //
+
+bool backend::_7z::load(KrbCompressCallback* callback, KrbFile* file) noexcept
+{
+	return false;
+}

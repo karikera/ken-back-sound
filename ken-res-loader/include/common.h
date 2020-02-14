@@ -7,7 +7,6 @@
 
 namespace kr
 {
-
 #ifdef _MSC_VER
 #include <wchar.h>
 	typedef wchar_t fchar_t;
@@ -76,7 +75,7 @@ namespace kr
 		}
 	};
 
-	bool KEN_EXTERNAL krb_fopen_std_file(KrbFile* fp, const fchar_t* path, const fchar_t* mode);
+	bool KEN_EXTERNAL krb_fopen(KrbFile* fp, const fchar_t* path, const fchar_t* mode);
 
 #define KRB_EXTENSION(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 	enum class KrbExtension:uint32_t

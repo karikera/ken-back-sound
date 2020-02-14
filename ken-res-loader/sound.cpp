@@ -71,7 +71,7 @@ namespace
 	}
 }
 
-extern "C" bool KEN_EXTERNAL krb_sound_load(KrbExtension extension, KrbSoundCallback * callback, KrbFile* file)
+bool KEN_EXTERNAL kr::krb_sound_load(KrbExtension extension, KrbSoundCallback * callback, KrbFile* file)
 {
 	kr::backend::ReadStream is(file);
 

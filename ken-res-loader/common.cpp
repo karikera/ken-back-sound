@@ -54,7 +54,7 @@ const KrbFileVFTable vftable = {
 	}
 };
 
-bool KEN_EXTERNAL krb_fopen_std_file(KrbFile* fp, const fchar_t* path, const fchar_t* mode)
+bool KEN_EXTERNAL kr::krb_fopen(KrbFile* fp, const fchar_t* path, const fchar_t* mode)
 {
 	fp->param = nullptr;
 #ifdef _MSC_VER

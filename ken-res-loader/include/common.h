@@ -104,7 +104,7 @@ namespace kr
 		uint32_t offset = 0;
 		for (;;)
 		{
-			char chr = *extension++;
+			C chr = *extension++;
 			if (chr == (C)'\0') break;
 			if ((C)'a' <= chr && chr <= (C)'z')
 			{

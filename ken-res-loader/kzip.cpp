@@ -90,7 +90,8 @@ struct Unzipper
 			GetSystemTimeAsFileTime((FILETIME*)&info.filetime);
 		}
 
-		if (pathstr.back() == '/')
+		char endschar = pathstr.back();
+		if (endschar == '/' || endschar == '\\')
 		{
 			pathstr.pop_back();
 			size_t filelen = pathstr.length();
@@ -111,7 +112,7 @@ struct Unzipper
 		std::vector<size_t> pathes;
 		for (;;)
 		{
-			size_t pos = pathstr.find_last_of('/');
+			size_t pos = pathstr.find_last_of("/\\");
 			if (pos == -1) break;
 			pathstr.resize(pos);
 			/* some zipfile don't contain directory alone before file */
@@ -130,10 +131,12 @@ struct Unzipper
 			for (auto iter = pathes.rbegin(); iter != end; ++iter)
 			{
 				size_t pos = *iter;
-				filename_inzip[pos] = '\0';
+				char* sepchr = &filename_inzip[pos];
+				char prev = *sepchr;
+				*sepchr = '\0';
 				info.filenameLength = pos;
 				m_callback->entry(m_callback, &info);
-				filename_inzip[pos] = '/';
+				*sepchr = prev;
 			}
 		}
 

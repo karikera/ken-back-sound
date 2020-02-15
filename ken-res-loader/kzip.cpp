@@ -127,7 +127,7 @@ struct Unzipper
 		if (!pathes.empty())
 		{
 			info.isDirectory = true;
-			auto end = pathes.rbegin();
+			auto end = pathes.rend();
 			for (auto iter = pathes.rbegin(); iter != end; ++iter)
 			{
 				size_t pos = *iter;

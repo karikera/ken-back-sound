@@ -4,19 +4,23 @@
 
 namespace kr
 {
-	class KrbCompressFileInfo
+	// same with Windows FILETIME
+	using filetime_t = uint64_t;
+
+	class KrbCompressEntry
 	{
 	public:
 		const char* filename;
+		size_t filenameLength;
 		bool isDirectory;
-		unsigned long long filetime;
+		filetime_t filetime;
 
 		virtual size_t read(void* dest, size_t size) noexcept(false) = 0;
 	};
 	class KrbCompressCallback
 	{
 	public:
-		void (*entry)(KrbCompressCallback* _this, KrbCompressFileInfo* _info);
+		void (*entry)(KrbCompressCallback* _this, KrbCompressEntry* _info);
 	};
 
 	/*class KrbCompress

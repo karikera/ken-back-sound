@@ -13,59 +13,9 @@
 #include "zlib_contrib/zip.h"
 #include "zlib_contrib/unzip.h"
 
+#include "filetime.h"
+
 using namespace kr;
-
-#ifdef WIN32
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-#else
-
-
-#include <time.h>
-
-using FILETIME = uint64_t;
-
-
-constexpr uint64_t SECSPERDAY = 86400;
-constexpr uint64_t TICKSPERSEC = 10000000;
-constexpr uint64_t SECS_1601_TO_1970 = ((369 * 365 + 89) * SECSPERDAY);
-constexpr uint64_t TICKS_1601_TO_1970 = (SECS_1601_TO_1970 * TICKSPERSEC);
-constexpr uint64_t EPOCH_DIFF = 11644473600LL;
-
-void RtlSecondsSince1970ToFileTime(uint32_t Seconds, FILETIME * ft) noexcept {
-	*ft = Seconds * TICKSPERSEC + TICKS_1601_TO_1970;
-}
-
-bool DosDateTimeToFileTime(uint16_t fatdate, uint16_t fattime, FILETIME * ft) noexcept {
-	tm newtm;
-	newtm.tm_sec = (fattime & 0x1f) * 2;
-	newtm.tm_min = (fattime >> 5) & 0x3f;
-	newtm.tm_hour = (fattime >> 11);
-	newtm.tm_mday = (fatdate & 0x1f);
-	newtm.tm_mon = ((fatdate >> 5) & 0x0f) - 1;
-	newtm.tm_year = (fatdate >> 9) + 80;
-	time_t time1 = mktime(&newtm);
-	tm* gtm = gmtime(&time1);
-	time_t time2 = mktime(gtm);
-	RtlSecondsSince1970ToFileTime(2 * time1 - time2, ft);
-	return true;
-}
-
-#include <sys/time.h>
-
-void GetSystemTimeAsFileTime(FILETIME* dest) noexcept {
-	timeval tv;
-	uint64_t result = EPOCH_DIFF;
-
-	gettimeofday(&tv, NULL);
-	result += tv.tv_sec;
-	result *= 10000000LL;
-	result += tv.tv_usec * 10;
-	*dest = result;
-}
-#endif
 
 static voidpf ZCALLBACK fopen64_file_func_16(voidpf opaque, const void* filename, int mode);
 static uLong ZCALLBACK fread_file_func(voidpf opaque, voidpf stream, void* buf, uLong size);
@@ -85,7 +35,7 @@ static zlib_filefunc64_def s_filefunc64 = {
 	ferror_file_func,
 };
 
-class UnzipperFile :public KrbCompressFileInfo
+class UnzipperFile :public KrbCompressEntry
 {
 public:
 	unzFile m_file;
@@ -130,8 +80,12 @@ struct Unzipper
 		info.m_file = m_file;
 		info.filename = filename_inzip;
 
-		static_assert(sizeof(info.filetime) == sizeof(FILETIME), "file time unmatched");
-		if (!DosDateTimeToFileTime((uint16_t)(file_info.dosDate >> 16), (uint16_t)file_info.dosDate, (FILETIME*)&info.filetime))
+		FILETIME localtime;
+		if (DosDateTimeToFileTime((uint16_t)(file_info.dosDate >> 16), (uint16_t)file_info.dosDate, &localtime) &&
+			LocalFileTimeToFileTime(&localtime, (FILETIME*)&info.filetime))
+		{
+		}
+		else
 		{
 			GetSystemTimeAsFileTime((FILETIME*)&info.filetime);
 		}
@@ -139,7 +93,9 @@ struct Unzipper
 		if (pathstr.back() == '/')
 		{
 			pathstr.pop_back();
-			filename_inzip[pathstr.length()] = '\0';
+			size_t filelen = pathstr.length();
+			filename_inzip[filelen] = '\0';
+			info.filenameLength = filelen;
 			info.isDirectory = true;
 			m_directoryCreated.insert(pathstr);
 			m_callback->entry(m_callback, &info);
@@ -175,11 +131,13 @@ struct Unzipper
 			{
 				size_t pos = *iter;
 				filename_inzip[pos] = '\0';
+				info.filenameLength = pos;
 				m_callback->entry(m_callback, &info);
 				filename_inzip[pos] = '/';
 			}
 		}
 
+		info.filenameLength = pathstr.size();
 		m_callback->entry(m_callback, &info);
 		return UNZ_OK;
 	}

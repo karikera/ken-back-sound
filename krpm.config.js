@@ -5,7 +5,7 @@ module.exports = {
 		['ken-res-loader/libogg/README.md', 'libogg.README'],
 		['ken-res-loader/libvorbis/README.md', 'libvorbis.README.md'],
 		['ken-res-loader/zlib/README', 'zlib.README'],
-	],
+    ],
 	each(krb)
 	{
 		krb.vsbuild('ken-res-loader.sln');

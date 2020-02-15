@@ -127,4 +127,23 @@ namespace kr
 		return (KrbExtension)v;
 	}
 
+	template <typename C>
+	KrbExtension krb_make_extension_from_path(const C* path) noexcept
+	{
+		const C* p = path;
+		for (;;)
+		{
+			char chr = *p++;
+			if (chr == (C)'\0') break;
+		}
+
+		for (;;)
+		{
+			char chr = *--p;
+			if (chr == (C)'.') break;
+			if (p == path) return KrbExtension::Invalid;
+		}
+		return krb_make_extension(p+1);
+	}
+
 }

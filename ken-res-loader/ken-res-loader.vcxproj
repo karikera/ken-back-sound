@@ -130,7 +130,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -152,7 +152,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -176,7 +176,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -204,7 +204,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -226,7 +226,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Emscripten'">
     <ClCompile>
-      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -244,7 +244,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Emscripten'">
     <ClCompile>
-      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__IS_KEN_BACKEND_SOUND_DLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -263,6 +263,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
   <ItemGroup>
     <ClCompile Include="7zlib.cpp" />
     <ClCompile Include="common.cpp" />
+    <ClCompile Include="filetime.cpp" />
     <ClCompile Include="image.cpp" />
     <ClCompile Include="jpeg.cpp" />
     <ClCompile Include="lzma.cpp" />
@@ -335,6 +336,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="7zlib.h" />
+    <ClInclude Include="filetime.h" />
     <ClInclude Include="include\compress.h" />
     <ClInclude Include="include\common.h" />
     <ClInclude Include="include\image.h" />

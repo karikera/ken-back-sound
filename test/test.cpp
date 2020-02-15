@@ -25,7 +25,7 @@ namespace test
 				std::vector<Entry> entries;
 			};
 			CbWithParam cb;
-			cb.entry = [](KrbCompressCallback* _this, KrbCompressFileInfo* _info){
+			cb.entry = [](KrbCompressCallback* _this, KrbCompressEntry* _info){
 				static_cast<CbWithParam*>(_this)->entries.push_back({
 					_info->filename,
 					_info->isDirectory

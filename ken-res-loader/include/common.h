@@ -133,13 +133,13 @@ namespace kr
 		const C* p = path;
 		for (;;)
 		{
-			char chr = *p++;
+			C chr = *p++;
 			if (chr == (C)'\0') break;
 		}
 
 		for (;;)
 		{
-			char chr = *--p;
+			C chr = *--p;
 			if (chr == (C)'.') break;
 			if (p == path) return KrbExtension::Invalid;
 		}

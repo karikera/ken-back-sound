@@ -75,6 +75,7 @@ struct Unzipper
 
 		std::string pathstr = filename_inzip;
 		if (pathstr.empty()) return nError;
+		size_t filename_inzip_length = pathstr.size();
 
 		UnzipperFile info;
 		info.m_file = m_file;
@@ -140,7 +141,7 @@ struct Unzipper
 		}
 
 		info.isDirectory = false;
-		info.filenameLength = pathstr.size();
+		info.filenameLength = filename_inzip_length;
 		m_callback->entry(m_callback, &info);
 		return UNZ_OK;
 	}

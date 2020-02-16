@@ -119,7 +119,6 @@ struct Unzipper
 			auto iter = m_directoryCreated.find(pathstr);
 			if (iter == m_directoryCreated.end())
 			{
-				info.isDirectory = true;
 				m_directoryCreated.insert(pathstr);
 				pathes.push_back(pos);
 			}
@@ -140,6 +139,7 @@ struct Unzipper
 			}
 		}
 
+		info.isDirectory = false;
 		info.filenameLength = pathstr.size();
 		m_callback->entry(m_callback, &info);
 		return UNZ_OK;

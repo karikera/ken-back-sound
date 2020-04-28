@@ -96,8 +96,7 @@ namespace
 					src->file->seek_cur(count - src->bytes_in_buffer);
 				}
 			};
-			LibJpeg* libjpeg = LibJpeg::getInstance();
-			if (libjpeg == nullptr) return;
+			KRL_USING(LibJpeg, libjpeg, );
 			src->resync_to_restart = libjpeg->jpeg_resync_to_restart; /* use default method */
 			src->term_source = [](j_decompress_ptr cinfo){};
 			src->file = in;
@@ -143,8 +142,7 @@ namespace
 
 bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexcept
 {
-	LibJpeg* libjpeg = LibJpeg::getInstance();
-	if (libjpeg == nullptr) return false;
+	KRL_USING(LibJpeg, libjpeg, false);
 	assert(info->pixelformat == PixelFormatBGR8);
 
 	/* This struct contains the JPEG compression parameters and pointers to
@@ -249,8 +247,7 @@ bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexce
 
 bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 {
-	LibJpeg* libjpeg = LibJpeg::getInstance();
-	if (libjpeg == nullptr) return false;
+	KRL_USING(LibJpeg, libjpeg, false);
 	/* This struct contains the JPEG decompression parameters and pointers to
 	* working space (which is allocated as needed by the JPEG library).
 	*/

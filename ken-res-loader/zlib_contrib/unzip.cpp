@@ -1496,8 +1496,7 @@ extern int ZEXPORT unzOpenCurrentFile3 (unzFile file, int* method,
     if (!s->current_file_ok)
         return UNZ_PARAMERROR;
 
-    ZLib* zlib = ZLib::getInstance();
-    if (zlib == nullptr) return UNZ_ERRNO;
+    KRL_USING(ZLib, zlib, UNZ_ERRNO);
 
     if (s->pfile_in_zip_read != NULL)
         unzCloseCurrentFile(file);
@@ -1691,10 +1690,6 @@ extern ZPOS64_T ZEXPORT unzGetCurrentFileZStreamPos64( unzFile file)
 */
 extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
 {
-    ZLib* zlib = ZLib::getInstance();
-    if (zlib == nullptr) return UNZ_ERRNO;
-
-
     int err=UNZ_OK;
     uInt iRead = 0;
     unz64_s* s;
@@ -1707,6 +1702,7 @@ extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
     if (pfile_in_zip_read_info==NULL)
         return UNZ_PARAMERROR;
 
+    KRL_USING(ZLib, zlib, UNZ_ERRNO);
 
     if (pfile_in_zip_read_info->read_buffer == NULL)
         return UNZ_END_OF_LIST_OF_FILE;
@@ -2027,8 +2023,7 @@ extern int ZEXPORT unzCloseCurrentFile (unzFile file)
     if (pfile_in_zip_read_info==NULL)
         return UNZ_PARAMERROR;
 
-    ZLib* zlib = ZLib::getInstance();
-    if (zlib == nullptr) return UNZ_ERRNO;
+    KRL_USING(ZLib, zlib, UNZ_ERRNO);
 
     if ((pfile_in_zip_read_info->rest_read_uncompressed == 0) &&
         (!pfile_in_zip_read_info->raw))

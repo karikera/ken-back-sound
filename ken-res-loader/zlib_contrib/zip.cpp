@@ -1086,9 +1086,8 @@ extern int ZEXPORT zipOpenNewFileInZip4_64 (zipFile file, const char* filename, 
     if ((method!=0) && (method!=Z_DEFLATED))
       return ZIP_PARAMERROR;
 #endif
-
-    ZLib* zlib = ZLib::getInstance();
-    if (zlib == nullptr) return ZIP_ERRNO;
+    
+    KRL_USING(ZLib, zlib, ZIP_ERRNO);
 
     zi = (zip64_internal*)file;
 
@@ -1418,8 +1417,7 @@ extern int ZEXPORT zipWriteInFileInZip (zipFile file,const void* buf,unsigned in
     if (zi->in_opened_file_inzip == 0)
         return ZIP_PARAMERROR;
 
-    ZLib* zlib = ZLib::getInstance();
-    if (zlib == nullptr) return ZIP_ERRNO;
+    KRL_USING(ZLib, zlib, ZIP_ERRNO);
 
     zi->ci.crc32 = zlib->crc32(zi->ci.crc32,(Bytef*)buf,(uInt)len);
 
@@ -1537,8 +1535,7 @@ extern int ZEXPORT zipCloseFileInZipRaw64 (zipFile file, ZPOS64_T uncompressed_s
         return ZIP_PARAMERROR;
     zi->ci.stream.avail_in = 0;
 
-    ZLib* zlib = ZLib::getInstance();
-    if (zlib == nullptr) return ZIP_ERRNO;
+    KRL_USING(ZLib, zlib, ZIP_ERRNO);
 
     if ((zi->ci.method == Z_DEFLATED) && (!zi->ci.raw))
                 {

@@ -40,8 +40,7 @@ namespace
 
 	bool loadFromOgg(KrbSoundCallback * callback, OggVorbis_File* vf) noexcept
 	{
-		LibVorbisFile* vorbisFile = LibVorbisFile::getInstance();
-		if (vorbisFile == nullptr) return false;
+		KRL_USING(LibVorbisFile, vorbisFile, false);
 
 		vorbis_info* vi;
 		vi = vorbisFile->ov_info(vf, -1);
@@ -88,9 +87,8 @@ bool KEN_EXTERNAL kr::krb_load_sound(KrbExtension extension, KrbSoundCallback * 
 		break;
 	case KrbExtension::SoundOgg:
 	{
-		LibVorbis* vorbis = LibVorbis::getInstance();
-		if (vorbis == nullptr) return false;
-		LibVorbisFile* vorbisFile = LibVorbisFile::getInstance();
+		KRL_USING(LibVorbis, vorbis, false);
+		KRL_USING(LibVorbisFile, vorbisFile, false);
 		ov_callbacks callbacks = {
 			[](void* buffer, size_t elementSize, size_t elementCount, void* fp)->size_t {
 			return ((KrbFile*)fp)->read(buffer, elementSize * elementCount);

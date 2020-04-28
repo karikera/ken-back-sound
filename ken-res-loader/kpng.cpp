@@ -31,8 +31,7 @@ KRL_END()
 
 bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 {
-	LibPng* libpng = LibPng::getInstance();
-	if (libpng == nullptr) return false;
+	KRL_USING(LibPng, libpng, false);
 
 	png_infop				info_ptr;
 	png_structp				png_ptr;
@@ -69,8 +68,7 @@ bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 	// png_init_io(png_ptr, file);
 	libpng->png_set_read_fn(png_ptr, file, [](png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead)
 		{
-			LibPng* libpng = LibPng::getInstance();
-			if (libpng == nullptr) return;
+			KRL_USING(LibPng, libpng,);
 			KrbFile* file = (KrbFile*)libpng->png_get_io_ptr(png_ptr);
 			if (file == nullptr) return;
 			file->read(outBytes, byteCountToRead);

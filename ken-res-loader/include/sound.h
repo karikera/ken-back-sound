@@ -35,6 +35,6 @@ namespace kr
 		short* (*start)(KrbSoundCallback* _this, KrbSoundInfo* _info);
 	};
 
-	bool KEN_EXTERNAL krb_sound_load(KrbExtension extension, KrbSoundCallback* callback, KrbFile* file);
+	bool KEN_EXTERNAL krb_load_sound(KrbExtension extension, KrbSoundCallback* callback, KrbFile* file);
 
 }

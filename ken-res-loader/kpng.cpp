@@ -8,14 +8,32 @@ extern "C" {
 #include "pnginfo.h"
 }
 
-#ifdef _DEBUG
-#pragma comment(lib, "libpng16d.lib")
-#else
-#pragma comment(lib, "libpng16.lib")
-#endif
+#include "libloader.h"
+KRL_BEGIN(LibPng, L"libpng16d.dll", L"libpng16.dll")
+KRL_IMPORT(png_create_read_struct)
+KRL_IMPORT(png_create_info_struct)
+KRL_IMPORT(png_destroy_read_struct)
+KRL_IMPORT(png_set_read_fn)
+KRL_IMPORT(png_read_info)
+KRL_IMPORT(png_get_io_ptr)
+KRL_IMPORT(png_get_IHDR)
+KRL_IMPORT(png_read_update_info)
+KRL_IMPORT(png_read_image)
+KRL_IMPORT(png_set_gray_to_rgb)
+KRL_IMPORT(png_set_expand)
+KRL_IMPORT(png_set_bgr)
+KRL_IMPORT(png_set_strip_16)
+KRL_IMPORT(png_set_packing)
+KRL_IMPORT(png_get_rowbytes)
+KRL_IMPORT(png_set_longjmp_fn)
+KRL_END()
+
 
 bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 {
+	LibPng* libpng = LibPng::getInstance();
+	if (libpng == nullptr) return false;
+
 	png_infop				info_ptr;
 	png_structp				png_ptr;
 	KrbImageInfo imginfo;
@@ -24,44 +42,46 @@ bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 	int						BltBits;
 
 	// Allocate/initialize the memory for image readpointerstruct...
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+	png_ptr = libpng->png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (png_ptr == nullptr)
 	{
 		return false;
 	}
 
 	// Allocate/initialize the memory for image information...
-	info_ptr = png_create_info_struct(png_ptr);
+	info_ptr = libpng->png_create_info_struct(png_ptr);
 	if (info_ptr == nullptr)
 	{
-		png_destroy_read_struct(&png_ptr, (png_infopp)nullptr, (png_infopp)nullptr);
+		libpng->png_destroy_read_struct(&png_ptr, (png_infopp)nullptr, (png_infopp)nullptr);
 		return false;
 	}
 
 	// Set error handling if you are using the setjmp/longjmp method (this is
 	// the normal method of doing things with libpng).  REQUIRED unless you
 	// set up your own error handlers in the png_create_read_struct() earlier.
-	if (setjmp(png_jmpbuf(png_ptr)))
+	if (setjmp((*libpng->png_set_longjmp_fn((png_ptr), longjmp, (sizeof(jmp_buf))))))
 	{
-		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)nullptr);
+		libpng->png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)nullptr);
 		return false;
 	}
 
 	// Set up the input control if you are using standard C streams...
 	// png_init_io(png_ptr, file);
-	png_set_read_fn(png_ptr, file, [](png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead)
+	libpng->png_set_read_fn(png_ptr, file, [](png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead)
 		{
-			KrbFile* file = (KrbFile*)png_get_io_ptr(png_ptr);
+			LibPng* libpng = LibPng::getInstance();
+			if (libpng == nullptr) return;
+			KrbFile* file = (KrbFile*)libpng->png_get_io_ptr(png_ptr);
 			if (file == nullptr) return;
 			file->read(outBytes, byteCountToRead);
 		});
 	
 	// The call to png_read_info() gives us all of the information from the
 	// Png file before the first IDAT (image data chunk).
-	png_read_info(png_ptr, info_ptr);
+	libpng->png_read_info(png_ptr, info_ptr);
 
 	// Get the Headerinfo...
-	png_get_IHDR(png_ptr, info_ptr, &imginfo.width, &imginfo.height, &bit_depth, &color_type,
+	libpng->png_get_IHDR(png_ptr, info_ptr, &imginfo.width, &imginfo.height, &bit_depth, &color_type,
 		&interlace_type, nullptr, nullptr);
 
 	if (info_ptr->channels*bit_depth == 32) BltBits = 32;
@@ -78,27 +98,27 @@ bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 
 	case PNG_COLOR_TYPE_GRAY:
 	case PNG_COLOR_TYPE_GRAY_ALPHA:
-		png_set_gray_to_rgb(png_ptr);
-		png_set_expand(png_ptr);
+		libpng->png_set_gray_to_rgb(png_ptr);
+		libpng->png_set_expand(png_ptr);
 		break;
 
 	case PNG_COLOR_TYPE_PALETTE:
-		png_set_expand(png_ptr);
+		libpng->png_set_expand(png_ptr);
 		break;
 	}
 
 	// flip the RGB pixels to BGR...
-	png_set_bgr(png_ptr);
+	libpng->png_set_bgr(png_ptr);
 
 	// Some last checks...
-	if (bit_depth == 16)	png_set_strip_16(png_ptr);
-	if (bit_depth < 8)		png_set_packing(png_ptr);
+	if (bit_depth == 16)	libpng->png_set_strip_16(png_ptr);
+	if (bit_depth < 8)		libpng->png_set_packing(png_ptr);
 
 	// Update the PNGLibLoader...
 
-	png_read_update_info(png_ptr, info_ptr);
+	libpng->png_read_update_info(png_ptr, info_ptr);
 
-	imginfo.pitchBytes = (uint32_t)png_get_rowbytes(png_ptr, info_ptr);
+	imginfo.pitchBytes = (uint32_t)libpng->png_get_rowbytes(png_ptr, info_ptr);
 
 	switch (BltBits)
 	{
@@ -116,10 +136,9 @@ bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 		assert(!"Not implemented Yet");
 		return false;
 	}
-	if (callback->start(callback, &imginfo))
+	uint8_t* surf = (uint8_t*)callback->start(callback, &imginfo);
+	if (surf)
 	{
-		uint8_t* surf = (uint8_t*)imginfo.data;
-
 		uint32_t H = imginfo.height;
 		png_bytep* row_pointers = new png_bytep[H];
 		png_bytep *p = row_pointers;
@@ -129,12 +148,12 @@ bool kr::backend::Png::load(KrbImageCallback* callback, KrbFile * file) noexcept
 			*p++ = surf;
 			surf += imginfo.pitchBytes;
 		}
-		png_read_image(png_ptr, row_pointers);
+		libpng->png_read_image(png_ptr, row_pointers);
 		delete [] row_pointers;
 	}
 
 	// clean up after the read, and free any memory allocated...
-	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)nullptr);
+	libpng->png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)nullptr);
 	return true;
 }
 bool kr::backend::Png::save(const KrbImageSaveInfo* info, KrbFile* file) noexcept

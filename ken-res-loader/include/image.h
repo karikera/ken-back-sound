@@ -36,7 +36,6 @@ namespace kr
 		uint32_t height;
 
 		uint32_t pitchBytes; // in-out(default: recommended pitch)
-		void* data; // out
 	};
 
 	class KrbImageSaveInfo
@@ -62,7 +61,7 @@ namespace kr
 	class KrbImageCallback
 	{
 	public:
-		bool (*start)(KrbImageCallback* _this, KrbImageInfo* _info);
+		void* (*start)(KrbImageCallback* _this, KrbImageInfo* _info);
 
 		KrbImagePalette* palette;
 	};

@@ -266,6 +266,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
     <ClCompile Include="filetime.cpp" />
     <ClCompile Include="image.cpp" />
     <ClCompile Include="jpeg.cpp" />
+    <ClCompile Include="libloader.cpp" />
     <ClCompile Include="lzma.cpp" />
     <ClCompile Include="openmp3\openmp3.cpp" />
     <ClCompile Include="openmp3\src\decoder.cpp">
@@ -330,9 +331,9 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="tga.cpp" />
     <ClCompile Include="kzip.cpp" />
-    <ClCompile Include="zlib_contrib\ioapi.c" />
-    <ClCompile Include="zlib_contrib\unzip.c" />
-    <ClCompile Include="zlib_contrib\zip.c" />
+    <ClCompile Include="zlib_contrib\ioapi.cpp" />
+    <ClCompile Include="zlib_contrib\unzip.cpp" />
+    <ClCompile Include="zlib_contrib\zip.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="7zlib.h" />
@@ -341,6 +342,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
     <ClInclude Include="include\common.h" />
     <ClInclude Include="include\image.h" />
     <ClInclude Include="jpeg.h" />
+    <ClInclude Include="libloader.h" />
     <ClInclude Include="lzma.h" />
     <ClInclude Include="lzmacommon.h" />
     <ClInclude Include="openmp3\include\openmp3.h" />
@@ -361,6 +363,7 @@ copy "$(ProjectDir)zlib\$(PlatformShortName)\lib\zlib%d%.dll" "$(OutDir)zlib%d%.
     <ClInclude Include="zlib_contrib\ioapi.h" />
     <ClInclude Include="zlib_contrib\unzip.h" />
     <ClInclude Include="zlib_contrib\zip.h" />
+    <ClInclude Include="zlib_contrib\zlib_link.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

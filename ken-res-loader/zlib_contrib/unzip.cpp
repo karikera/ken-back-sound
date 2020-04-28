@@ -72,7 +72,11 @@
         #define NOUNCRYPT
 #endif
 
+extern "C"
+{
 #include "zlib.h"
+}
+
 #include "unzip.h"
 
 #ifdef STDC
@@ -118,6 +122,7 @@
 #define SIZECENTRALDIRITEM (0x2e)
 #define SIZEZIPLOCALHEADER (0x1e)
 
+#include "zlib_link.h"
 
 const char unz_copyright[] =
    " unzip 1.01 Copyright 1998-2004 Gilles Vollant - http://www.winimage.com/zLibDll";
@@ -1491,6 +1496,9 @@ extern int ZEXPORT unzOpenCurrentFile3 (unzFile file, int* method,
     if (!s->current_file_ok)
         return UNZ_PARAMERROR;
 
+    ZLib* zlib = ZLib::getInstance();
+    if (zlib == nullptr) return UNZ_ERRNO;
+
     if (s->pfile_in_zip_read != NULL)
         unzCloseCurrentFile(file);
 
@@ -1581,7 +1589,7 @@ extern int ZEXPORT unzOpenCurrentFile3 (unzFile file, int* method,
       pfile_in_zip_read_info->stream.next_in = 0;
       pfile_in_zip_read_info->stream.avail_in = 0;
 
-      err=inflateInit2(&pfile_in_zip_read_info->stream, -MAX_WBITS);
+      err=zlib->inflateInit2(&pfile_in_zip_read_info->stream, -MAX_WBITS);
       if (err == Z_OK)
         pfile_in_zip_read_info->stream_initialised=Z_DEFLATED;
       else
@@ -1683,6 +1691,10 @@ extern ZPOS64_T ZEXPORT unzGetCurrentFileZStreamPos64( unzFile file)
 */
 extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
 {
+    ZLib* zlib = ZLib::getInstance();
+    if (zlib == nullptr) return UNZ_ERRNO;
+
+
     int err=UNZ_OK;
     uInt iRead = 0;
     unz64_s* s;
@@ -1781,7 +1793,7 @@ extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
 
             pfile_in_zip_read_info->total_out_64 = pfile_in_zip_read_info->total_out_64 + uDoCopy;
 
-            pfile_in_zip_read_info->crc32 = crc32(pfile_in_zip_read_info->crc32,
+            pfile_in_zip_read_info->crc32 = zlib->crc32(pfile_in_zip_read_info->crc32,
                                 pfile_in_zip_read_info->stream.next_out,
                                 uDoCopy);
             pfile_in_zip_read_info->rest_read_uncompressed-=uDoCopy;
@@ -1818,7 +1830,7 @@ extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
 
             pfile_in_zip_read_info->total_out_64 = pfile_in_zip_read_info->total_out_64 + uOutThis;
 
-            pfile_in_zip_read_info->crc32 = crc32(pfile_in_zip_read_info->crc32,bufBefore, (uInt)(uOutThis));
+            pfile_in_zip_read_info->crc32 = zlib->crc32(pfile_in_zip_read_info->crc32,bufBefore, (uInt)(uOutThis));
             pfile_in_zip_read_info->rest_read_uncompressed -= uOutThis;
             iRead += (uInt)(uTotalOutAfter - uTotalOutBefore);
 
@@ -1851,7 +1863,7 @@ extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
                 (pfile_in_zip_read_info->rest_read_compressed == 0))
                 flush = Z_FINISH;
             */
-            err=inflate(&pfile_in_zip_read_info->stream,flush);
+            err= zlib->inflate(&pfile_in_zip_read_info->stream,flush);
 
             if ((err>=0) && (pfile_in_zip_read_info->stream.msg!=NULL))
               err = Z_DATA_ERROR;
@@ -1862,7 +1874,7 @@ extern int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
             pfile_in_zip_read_info->total_out_64 = pfile_in_zip_read_info->total_out_64 + uOutThis;
 
             pfile_in_zip_read_info->crc32 =
-                crc32(pfile_in_zip_read_info->crc32,bufBefore,
+                zlib->crc32(pfile_in_zip_read_info->crc32,bufBefore,
                         (uInt)(uOutThis));
 
             pfile_in_zip_read_info->rest_read_uncompressed -=
@@ -2015,6 +2027,8 @@ extern int ZEXPORT unzCloseCurrentFile (unzFile file)
     if (pfile_in_zip_read_info==NULL)
         return UNZ_PARAMERROR;
 
+    ZLib* zlib = ZLib::getInstance();
+    if (zlib == nullptr) return UNZ_ERRNO;
 
     if ((pfile_in_zip_read_info->rest_read_uncompressed == 0) &&
         (!pfile_in_zip_read_info->raw))
@@ -2027,7 +2041,7 @@ extern int ZEXPORT unzCloseCurrentFile (unzFile file)
     TRYFREE(pfile_in_zip_read_info->read_buffer);
     pfile_in_zip_read_info->read_buffer = NULL;
     if (pfile_in_zip_read_info->stream_initialised == Z_DEFLATED)
-        inflateEnd(&pfile_in_zip_read_info->stream);
+        zlib->inflateEnd(&pfile_in_zip_read_info->stream);
 #ifdef HAVE_BZIP2
     else if (pfile_in_zip_read_info->stream_initialised == Z_BZIP2ED)
         BZ2_bzDecompressEnd(&pfile_in_zip_read_info->bstream);

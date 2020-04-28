@@ -6,12 +6,6 @@
 
 #include "include/common.h"
 
-#ifdef _DEBUG
-#pragma comment(lib, "zlibd.lib")
-#else
-#pragma comment(lib, "zlib.lib")
-#endif
-
 using namespace kr;
 
 const KrbFileVFTable vftable = {

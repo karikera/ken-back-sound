@@ -2,17 +2,68 @@
 #include "CppUnitTest.h"
 
 #include "../ken-res-loader/include/compress.h"
+#include "../ken-res-loader/include/image.h"
+#include "../ken-res-loader/include/sound.h"
 #include <vector>
 using namespace kr;
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+void loadImage(KrbExtension ext, const wchar_t* filepath) noexcept
+{
+	KrbFile file;
+	bool file_open = krb_fopen(&file, filepath, L"rb");
+	Assert::IsTrue(file_open, L"resource file not found");
+
+	struct Loader : KrbImageCallback
+	{
+		void* data;
+	};
+	Loader loader;
+	loader.palette = nullptr;
+	loader.start = [](KrbImageCallback* _this, KrbImageInfo* _info)->void* {
+		Assert::AreEqual((uint32_t)279, _info->width, L"width size not matched");
+		Assert::AreEqual((uint32_t)71, _info->height, L"height size not matched");
+		return ((Loader*)_this)->data = new uint32_t[_info->pitchBytes * _info->height];
+	};
+	bool res = krb_load_image(ext, &loader, &file);
+	Assert::IsTrue(res, L"image Load failed");
+	delete[] loader.data;
+}
 
 namespace test
 {
 	TEST_CLASS(test)
 	{
 	public:
-		
+
+		TEST_METHOD(loadogg)
+		{
+			KrbFile file;
+			bool file_open = krb_fopen(&file, L"../../../test/ogg.ogg", L"rb");
+			Assert::IsTrue(file_open, L"resource file not found");
+
+			struct Loader : KrbSoundCallback
+			{
+				uint8_t* data;
+			};
+			Loader loader;
+			loader.start = [](KrbSoundCallback* _this, KrbSoundInfo* _info)->short*{
+				Assert::IsTrue(74.3 < _info->duration && _info->duration < 74.4, L"sound duration not matched");
+				return (short*)(((Loader*)_this)->data = new uint8_t[_info->totalBytes]);
+			};
+			bool res = krb_load_sound(KrbExtension::SoundOgg, &loader, &file);
+			Assert::IsTrue(res, L"sound Load failed");
+			delete loader.data;
+		}
+		TEST_METHOD(loadpng)
+		{
+			loadImage(KrbExtension::ImagePng, L"../../../test/png.png");
+		}
+		TEST_METHOD(loadjpeg)
+		{
+			loadImage(KrbExtension::ImageJpg, L"../../../test/jpeg.jpg");
+		}
 		TEST_METHOD(loadzip)
 		{
 			struct Entry

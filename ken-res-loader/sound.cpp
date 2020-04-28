@@ -12,13 +12,17 @@
 #include <math.h>
 #include <assert.h>
 
-#ifdef _DEBUG
-#pragma comment(lib, "libvorbisd.lib")
-#pragma comment(lib, "libvorbisfiled.lib")
-#else
-#pragma comment(lib, "libvorbis.lib")
-#pragma comment(lib, "libvorbisfile.lib")
-#endif
+#include "libloader.h"
+KRL_BEGIN(LibVorbis, L"libvorbisd.dll", L"libvorbis.dll")
+KRL_END()
+
+KRL_BEGIN(LibVorbisFile, L"libvorbisfiled.dll", L"libvorbisfile.dll")
+KRL_IMPORT(ov_time_total)
+KRL_IMPORT(ov_read)
+KRL_IMPORT(ov_info)
+KRL_IMPORT(ov_open_callbacks)
+KRL_IMPORT(ov_clear)
+KRL_END()
 
 using namespace kr;
 
@@ -36,8 +40,11 @@ namespace
 
 	bool loadFromOgg(KrbSoundCallback * callback, OggVorbis_File* vf) noexcept
 	{
-		vorbis_info *  vi;
-		vi = ov_info(vf, -1);
+		LibVorbisFile* vorbisFile = LibVorbisFile::getInstance();
+		if (vorbisFile == nullptr) return false;
+
+		vorbis_info* vi;
+		vi = vorbisFile->ov_info(vf, -1);
 		if (vi == nullptr) return false;
 
 		
@@ -49,7 +56,7 @@ namespace
 		info.format.samplesPerSec = vi->rate;
 		info.format.bytesPerSec = info.format.samplesPerSec * info.format.blockAlign;
 		info.format.size = sizeof(info.format);
-		info.duration = ov_time_total(vf, -1);
+		info.duration = vorbisFile->ov_time_total(vf, -1);
 		info.totalBytes = (uint32_t)(info.format.samplesPerSec * info.duration);
 		char * dest = (char*)callback->start(callback, &info);
 		if (dest == nullptr) return false;
@@ -58,7 +65,7 @@ namespace
 		while (left)
 		{
 			int nBitStream;
-			int readed = ov_read(vf, dest, left, 0, 2, 1, &nBitStream);
+			int readed = vorbisFile->ov_read(vf, dest, left, 0, 2, 1, &nBitStream);
 			if (readed < 0)
 			{
 				memset(dest, 0, left);
@@ -71,7 +78,7 @@ namespace
 	}
 }
 
-bool KEN_EXTERNAL kr::krb_sound_load(KrbExtension extension, KrbSoundCallback * callback, KrbFile* file)
+bool KEN_EXTERNAL kr::krb_load_sound(KrbExtension extension, KrbSoundCallback * callback, KrbFile* file)
 {
 	kr::backend::ReadStream is(file);
 
@@ -81,7 +88,9 @@ bool KEN_EXTERNAL kr::krb_sound_load(KrbExtension extension, KrbSoundCallback * 
 		break;
 	case KrbExtension::SoundOgg:
 	{
-
+		LibVorbis* vorbis = LibVorbis::getInstance();
+		if (vorbis == nullptr) return false;
+		LibVorbisFile* vorbisFile = LibVorbisFile::getInstance();
 		ov_callbacks callbacks = {
 			[](void* buffer, size_t elementSize, size_t elementCount, void* fp)->size_t {
 			return ((KrbFile*)fp)->read(buffer, elementSize * elementCount);
@@ -99,7 +108,7 @@ bool KEN_EXTERNAL kr::krb_sound_load(KrbExtension extension, KrbSoundCallback * 
 			[](void* fp)->long { return (long)((KrbFile*)fp)->tell(); }
 		};
 		OggVorbis_File vf;
-		int res = ov_open_callbacks((void*)file, &vf, nullptr, 0, callbacks);
+		int res = vorbisFile->ov_open_callbacks((void*)file, &vf, nullptr, 0, callbacks);
 		if (res < 0)
 		{
 			switch (res) ////에러처리
@@ -113,7 +122,7 @@ bool KEN_EXTERNAL kr::krb_sound_load(KrbExtension extension, KrbSoundCallback * 
 			return false;
 		}
 		bool ret = loadFromOgg(callback, &vf);
-		ov_clear(&vf);
+		vorbisFile->ov_clear(&vf);
 		return ret;
 	}
 	case KrbExtension::SoundMp3:

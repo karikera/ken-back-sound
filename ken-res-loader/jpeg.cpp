@@ -12,13 +12,26 @@ extern "C"
 
 #include "assert.h"
 
-using namespace kr;
+#include "libloader.h"
+KRL_BEGIN(LibJpeg, L"jpegd.dll", L"jpeg.dll")
+KRL_IMPORT(jpeg_std_error)
+KRL_IMPORT(jpeg_set_defaults)
+KRL_IMPORT(jpeg_set_quality)
+KRL_IMPORT(jpeg_start_compress)
+KRL_IMPORT(jpeg_write_scanlines)
+KRL_IMPORT(jpeg_finish_compress)
+KRL_IMPORT(jpeg_destroy_compress)
+KRL_IMPORT(jpeg_destroy_decompress)
+KRL_IMPORT(jpeg_read_header)
+KRL_IMPORT(jpeg_start_decompress)
+KRL_IMPORT(jpeg_finish_decompress)
+KRL_IMPORT(jpeg_CreateDecompress)
+KRL_IMPORT(jpeg_CreateCompress)
+KRL_IMPORT(jpeg_read_scanlines)
+KRL_IMPORT(jpeg_resync_to_restart)
+KRL_END()
 
-#ifdef _DEBUG
-#pragma comment(lib, "jpegd.lib")
-#else
-#pragma comment(lib, "jpeg.lib")
-#endif
+using namespace kr;
 
 struct my_error_mgr {
 	struct jpeg_error_mgr pub;    /* "public" fields */
@@ -83,7 +96,9 @@ namespace
 					src->file->seek_cur(count - src->bytes_in_buffer);
 				}
 			};
-			src->resync_to_restart = jpeg_resync_to_restart; /* use default method */
+			LibJpeg* libjpeg = LibJpeg::getInstance();
+			if (libjpeg == nullptr) return;
+			src->resync_to_restart = libjpeg->jpeg_resync_to_restart; /* use default method */
 			src->term_source = [](j_decompress_ptr cinfo){};
 			src->file = in;
 			src->bytes_in_buffer = 0; /* forces fill_input_buffer on first read */
@@ -128,6 +143,8 @@ namespace
 
 bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexcept
 {
+	LibJpeg* libjpeg = LibJpeg::getInstance();
+	if (libjpeg == nullptr) return false;
 	assert(info->pixelformat == PixelFormatBGR8);
 
 	/* This struct contains the JPEG compression parameters and pointers to
@@ -153,9 +170,9 @@ bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexce
 	* This routine fills in the contents of struct jerr, and returns jerr's
 	* address which we place into the link field in cinfo.
 	*/
-	cinfo.err = jpeg_std_error(&jerr);
+	cinfo.err = libjpeg->jpeg_std_error(&jerr);
 	/* Now we can initialize the JPEG compression object. */
-	jpeg_create_compress(&cinfo);
+	libjpeg->jpeg_create_compress(&cinfo);
 	kr_jpeg_destination_mgr::make(&cinfo, file);
 
 	/* Step 2: specify data destination (eg, a file) */
@@ -183,18 +200,18 @@ bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexce
 										  * (You must set at least cinfo.in_color_space before calling this,
 										  * since the defaults depend on the source color space.)
 										  */
-	jpeg_set_defaults(&cinfo);
+	libjpeg->jpeg_set_defaults(&cinfo);
 	/* Now you can set any non-default parameters you wish to.
 	* Here we just illustrate the use of quality (quantization table) scaling:
 	*/
-	jpeg_set_quality(&cinfo, info->jpegQuality, TRUE /* limit to baseline-JPEG values */);
+	libjpeg->jpeg_set_quality(&cinfo, info->jpegQuality, TRUE /* limit to baseline-JPEG values */);
 
 	/* Step 4: Start compressor */
 
 	/* TRUE ensures that we will write a complete interchange-JPEG file.
 	* Pass TRUE unless you are very sure of what you're doing.
 	*/
-	jpeg_start_compress(&cinfo, TRUE);
+	libjpeg->jpeg_start_compress(&cinfo, TRUE);
 
 	/* Step 5: while (scan lines remain to be written) */
 	/*           jpeg_write_scanlines(...); */
@@ -215,16 +232,16 @@ bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexce
 		*/
 		JSAMPROW row_pointer[1];      /* pointer to JSAMPLE row[s] */
 		row_pointer[0] = src + cinfo.next_scanline * row_stride;
-		(void)jpeg_write_scanlines(&cinfo, row_pointer, 1);
+		(void)libjpeg->jpeg_write_scanlines(&cinfo, row_pointer, 1);
 	}
 
 	/* Step 6: Finish compression */
-	jpeg_finish_compress(&cinfo);
+	libjpeg->jpeg_finish_compress(&cinfo);
 
 	/* Step 7: release JPEG compression object */
 
 	/* This is an important step since it will release a good deal of memory. */
-	jpeg_destroy_compress(&cinfo);
+	libjpeg->jpeg_destroy_compress(&cinfo);
 
 	/* And we're done! */
 	return true;
@@ -232,6 +249,8 @@ bool kr::backend::Jpeg::save(const KrbImageSaveInfo* info, KrbFile* file) noexce
 
 bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 {
+	LibJpeg* libjpeg = LibJpeg::getInstance();
+	if (libjpeg == nullptr) return false;
 	/* This struct contains the JPEG decompression parameters and pointers to
 	* working space (which is allocated as needed by the JPEG library).
 	*/
@@ -254,25 +273,25 @@ bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 								  /* Step 1: allocate and initialize JPEG decompression object */
 
 								  /* We set up the normal JPEG error routines, then override error_exit. */
-	cinfo.err = jpeg_std_error(&jerr.pub);
+	cinfo.err = libjpeg->jpeg_std_error(&jerr.pub);
 	jerr.pub.error_exit = my_error_exit;
 	/* Establish the setjmp return context for my_error_exit to use. */
 	if (setjmp(jerr.setjmp_buffer)) {
 		/* If we get here, the JPEG code has signaled an error.
 		* We need to clean up the JPEG object, close the input file, and return.
 		*/
-		jpeg_destroy_decompress(&cinfo);
+		libjpeg->jpeg_destroy_decompress(&cinfo);
 		return false;
 	}
 	/* Now we can initialize the JPEG decompression object. */
-	jpeg_create_decompress(&cinfo);
+	libjpeg->jpeg_create_decompress(&cinfo);
 
 	/* Step 2: specify data source (eg, a file) */
 	kr_jpeg_source_mgr::make(&cinfo, file);
 
 	/* Step 3: read file parameters with jpeg_read_header() */
 
-	(void)jpeg_read_header(&cinfo, TRUE);
+	(void)libjpeg->jpeg_read_header(&cinfo, TRUE);
 	/* We can ignore the return value from jpeg_read_header since
 	*   (a) suspension is not possible with the stdio data source, and
 	*   (b) we passed TRUE to reject a tables-only JPEG file as an error.
@@ -287,7 +306,7 @@ bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 
 	/* Step 5: Start decompressor */
 
-	(void)jpeg_start_decompress(&cinfo);
+	(void)libjpeg->jpeg_start_decompress(&cinfo);
 	/* We can ignore the return value since suspension is not possible
 	* with the stdio data source.
 	*/
@@ -306,13 +325,13 @@ bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 	imginfo.pitchBytes = row_stride;
 	imginfo.height = cinfo.output_height;
 	imginfo.pixelformat = PixelFormatBGR8;
-	if (!callback->start(callback, &imginfo))
+	char* dest = (char*)callback->start(callback, &imginfo);
+	if (!dest)
 	{
-		jpeg_finish_decompress(&cinfo);
-		jpeg_destroy_decompress(&cinfo);
+		libjpeg->jpeg_finish_decompress(&cinfo);
+		libjpeg->jpeg_destroy_decompress(&cinfo);
 		return false;
 	}
-	char * dest = (char*)imginfo.data;
 
 	/* Make a one-row-high sample array that will go away when done with image */
 	buffer = (*cinfo.mem->alloc_sarray)
@@ -329,7 +348,7 @@ bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 		* Here the array is only one element long, but you could ask for
 		* more than one scanline at a time if that's more convenient.
 		*/
-		(void)jpeg_read_scanlines(&cinfo, buffer, 1);
+		(void)libjpeg->jpeg_read_scanlines(&cinfo, buffer, 1);
 		/* Assume put_scanline_someplace wants a pointer and sample count. */
 		memcpy(dest, buffer[0], row_stride);
 		dest += imginfo.pitchBytes;
@@ -337,7 +356,7 @@ bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 
 	/* Step 7: Finish decompression */
 
-	jpeg_finish_decompress(&cinfo);
+	libjpeg->jpeg_finish_decompress(&cinfo);
 	/* We can ignore the return value since suspension is not possible
 	* with the stdio data source.
 	*/
@@ -345,7 +364,7 @@ bool kr::backend::Jpeg::load(KrbImageCallback* callback, KrbFile* file) noexcept
 	/* Step 8: Release JPEG decompression object */
 
 	/* This is an important step since it will release a good deal of memory. */
-	jpeg_destroy_decompress(&cinfo);
+	libjpeg->jpeg_destroy_decompress(&cinfo);
 
 	/* After finish_decompress, we can close the input file.
 	* Here we postpone it until after no more JPEG errors are possible,

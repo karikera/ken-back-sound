@@ -114,13 +114,13 @@ bool KEN_EXTERNAL kr::krb_load_image(KrbExtension extension, KrbImageCallback* c
 			return false;
 		}
 
-		if (!callback->start(callback, &info))
+		uint8_t* dest = (uint8_t*)callback->start(callback, &info);
+		if (!dest)
 		{
 			free(imageBuffer);
 			free(tempBuffer);
 			return false;
 		}
-		uint8_t* dest = (uint8_t*)info.data;
 
 		size_t srcWidth = info.width * bi->biBitCount / 8;
 		uint8_t* src = imageBuffer + totalBytes * info.height - widthBytes;

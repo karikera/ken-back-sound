@@ -24,15 +24,6 @@
     <ClCompile Include="tga.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="zlib_contrib\ioapi.c">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="zlib_contrib\unzip.c">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="zlib_contrib\zip.c">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="7zlib.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -82,6 +73,18 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="filetime.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="libloader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="zlib_contrib\unzip.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="zlib_contrib\ioapi.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="zlib_contrib\zip.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -162,6 +165,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="filetime.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="libloader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="zlib_contrib\zlib_link.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
